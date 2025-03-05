@@ -1,2 +1,1 @@
-# databases-course
-Lab code from the Databases course at AGH UST.
+# Databases course at AGH UST - 2024/2025.
