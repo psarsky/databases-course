@@ -1,4 +1,4 @@
-
+-- Widok pozwala zaprezentować jakie osoby są zarezerwowane na dane wycieczki i poprzez jakie rezerwacjie
 CREATE OR REPLACE VIEW vw_reservation AS
 SELECT
     reservation_id, country, trip_date, trip_name, firstname, lastname, status, TRIP.trip_id, RESERVATION.person_id, no_tickets
@@ -7,6 +7,8 @@ FROM
     JOIN RESERVATION ON PERSON.PERSON_ID = RESERVATION.PERSON_ID
     JOIN TRIP ON RESERVATION.TRIP_ID = TRIP.TRIP_ID;
 
+-- Widok umożliwia sprawdzenie ile jest wolnych miejsc na daną wycieczkę, zakładając że rezerwacje o statusie nie zajmują miejsc,
+-- a o statusir N i P zajmują
 CREATE OR REPLACE VIEW vw_trip AS
 SELECT TRIP.trip_id, country, trip_date, trip_name, (TRIP.MAX_NO_PLACES-W1.COUNT) no_available_places
 FROM TRIP
@@ -16,6 +18,8 @@ JOIN (
     WHERE STATUS = 'N' OR STATUS = 'P'
     GROUP BY TRIP_ID) W1 ON TRIP.TRIP_ID = W1.TRIP_ID;
 
+-- Widok kożysta z widoku vw_trip i na jego podstawie wyświetla jedynie wycieczki, które są w przyszłości
+--i mają wolne miejsca
 CREATE OR REPLACE VIEW vw_available_trip AS
 SELECT *
 FROM vw_trip
