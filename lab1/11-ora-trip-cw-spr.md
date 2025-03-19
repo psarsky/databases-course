@@ -8,7 +8,7 @@ widoki, funkcje, procedury, triggery
 ---
 
 
-Imiona i nazwiska autorów :
+Imiona i nazwiska autorów : Dariusz Rozmus, Jakub Psarski
 
 ---
 <style>
@@ -62,106 +62,107 @@ Imiona i nazwiska autorów :
 
 
 ```sql
-create sequence s_person_seq  
-   start with 1  
-   increment by 1;
+CREATE SEQUENCE s_person_seq
+	START WITH 1
+	INCREMENT BY 1;
 
-create table person  
-(  
-  person_id int not null
-      constraint pk_person  
-         primary key,
-  firstname varchar(50),  
-  lastname varchar(50)
-)  
+CREATE TABLE person
+(
+	person_id int NOT NULL
+		CONSTRAINT pk_person
+			PRIMARY KEY,
+	firstname varchar(50),
+	lastname  varchar(50)
+)
 
-alter table person  
-    modify person_id int default s_person_seq.nextval;
-   
-```
-
-
-```sql
-create sequence s_trip_seq  
-   start with 1  
-   increment by 1;
-
-create table trip  
-(  
-  trip_id int  not null
-     constraint pk_trip  
-         primary key, 
-  trip_name varchar(100),  
-  country varchar(50),  
-  trip_date date,  
-  max_no_places int
-);  
-
-alter table trip 
-    modify trip_id int default s_trip_seq.nextval;
-```
-
-
-```sql
-create sequence s_reservation_seq  
-   start with 1  
-   increment by 1;
-
-create table reservation  
-(  
-  reservation_id int not null
-      constraint pk_reservation  
-         primary key, 
-  trip_id int,  
-  person_id int,  
-  status char(1)
-);  
-
-alter table reservation 
-    modify reservation_id int default s_reservation_seq.nextval;
-
-
-alter table reservation  
-add constraint reservation_fk1 foreign key  
-( person_id ) references person ( person_id ); 
-  
-alter table reservation  
-add constraint reservation_fk2 foreign key  
-( trip_id ) references trip ( trip_id );  
-  
-alter table reservation  
-add constraint reservation_chk1 check  
-(status in ('N','P','C'));
+ALTER TABLE person
+	MODIFY person_id INT DEFAULT s_person_seq.nextval;
 
 ```
 
 
 ```sql
-create sequence s_log_seq  
-   start with 1  
-   increment by 1;
+CREATE SEQUENCE s_trip_seq
+	START WITH 1
+	INCREMENT BY 1;
+
+CREATE TABLE trip
+(
+	trip_id       int NOT NULL
+		CONSTRAINT pk_trip
+			PRIMARY KEY,
+	trip_name     varchar(100),
+	country       varchar(50),
+	trip_date     date,
+	max_no_places int
+);
+
+ALTER TABLE trip
+	MODIFY trip_id INT DEFAULT s_trip_seq.nextval;
+```
 
 
-create table log  
-(  
-    log_id int not null
-         constraint pk_log  
-         primary key,
-    reservation_id int not null,  
-    log_date date not null,  
-    status char(1)
-);  
+```sql
+CREATE SEQUENCE s_reservation_seq
+    START WITH 1
+    INCREMENT BY 1;
 
-alter table log 
-    modify log_id int default s_log_seq.nextval;
-  
-alter table log  
-add constraint log_chk1 check  
-(status in ('N','P','C')) enable;
-  
-alter table log  
-add constraint log_fk1 foreign key  
-( reservation_id ) references reservation ( reservation_id );
+CREATE TABLE reservation
+(
+    reservation_id int NOT NULL
+        CONSTRAINT pk_reservation
+            PRIMARY KEY,
+    trip_id        int,
+    person_id      int,
+    status         char(1)
+);
+
+ALTER TABLE reservation
+    MODIFY reservation_id INT DEFAULT s_reservation_seq.nextval;
+
+
+ALTER TABLE reservation
+    ADD CONSTRAINT reservation_fk1 FOREIGN KEY
+        (person_id) REFERENCES person (person_id);
+
+ALTER TABLE reservation
+    ADD CONSTRAINT reservation_fk2 FOREIGN KEY
+        (trip_id) REFERENCES trip (trip_id);
+
+ALTER TABLE reservation
+    ADD CONSTRAINT reservation_chk1 CHECK
+        (status IN ('N', 'P', 'C'));
+
+```
+
+
+```sql
+CREATE SEQUENCE s_log_seq
+	START WITH 1
+	INCREMENT BY 1;
+
+
+CREATE TABLE log
+(
+	log_id         int  NOT NULL
+		CONSTRAINT pk_log
+			PRIMARY KEY,
+	reservation_id int  NOT NULL,
+	log_date       date NOT NULL,
+	status         char(1)
+);
+
+ALTER TABLE log
+	MODIFY log_id INT DEFAULT s_log_seq.nextval;
+
+ALTER TABLE log
+	ADD CONSTRAINT log_chk1 CHECK
+		(status IN ('N', 'P', 'C'))
+enable;
+
+ALTER TABLE log
+	ADD CONSTRAINT log_fk1 FOREIGN KEY
+		(reservation_id) REFERENCES reservation (reservation_id);
 ```
 
 
@@ -181,49 +182,49 @@ W razie potrzeby należy zmodyfikować dane tak żeby przetestować różne przy
 
 ```sql
 -- trip
-insert into trip(trip_name, country, trip_date, max_no_places)  
-values ('Wycieczka do Paryza', 'Francja', to_date('2023-09-12', 'YYYY-MM-DD'), 3);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
-values ('Piekny Krakow', 'Polska', to_date('2025-05-03','YYYY-MM-DD'), 2);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
-values ('Znow do Francji', 'Francja', to_date('2025-05-01','YYYY-MM-DD'), 2);  
-  
-insert into trip(trip_name, country, trip_date,  max_no_places)  
-values ('Hel', 'Polska', to_date('2025-05-01','YYYY-MM-DD'),  2);
+INSERT INTO trip(trip_name, country, trip_date, max_no_places)
+VALUES ('Wycieczka do Paryza', 'Francja', to_date('2023-09-12', 'YYYY-MM-DD'), 3);
+
+INSERT INTO trip(trip_name, country, trip_date, max_no_places)
+VALUES ('Piekny Krakow', 'Polska', to_date('2025-05-03', 'YYYY-MM-DD'), 2);
+
+INSERT INTO trip(trip_name, country, trip_date, max_no_places)
+VALUES ('Znow do Francji', 'Francja', to_date('2025-05-01', 'YYYY-MM-DD'), 2);
+
+INSERT INTO trip(trip_name, country, trip_date, max_no_places)
+VALUES ('Hel', 'Polska', to_date('2025-05-01', 'YYYY-MM-DD'), 2);
 
 -- person
-insert into person(firstname, lastname)  
-values ('Jan', 'Nowak');  
-  
-insert into person(firstname, lastname)  
-values ('Jan', 'Kowalski');  
-  
-insert into person(firstname, lastname)  
-values ('Jan', 'Nowakowski');  
-  
-insert into person(firstname, lastname)  
-values  ('Novak', 'Nowak');
+INSERT INTO person(firstname, lastname)
+VALUES ('Jan', 'Nowak');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Jan', 'Kowalski');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Jan', 'Nowakowski');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Novak', 'Nowak');
 
 -- reservation
 -- trip1
-insert  into reservation(trip_id, person_id, status)  
-values (1, 1, 'P');  
-  
-insert into reservation(trip_id, person_id, status)  
-values (1, 2, 'N');  
-  
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (1, 1, 'P');
+
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (1, 2, 'N');
+
 -- trip 2  
-insert into reservation(trip_id, person_id, status)  
-values (2, 1, 'P');  
-  
-insert into reservation(trip_id, person_id, status)  
-values (2, 4, 'C');  
-  
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (2, 1, 'P');
+
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (2, 4, 'C');
+
 -- trip 3  
-insert into reservation(trip_id, person_id, status)  
-values (2, 4, 'P');
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (2, 4, 'P');
 ```
 
 proszę pamiętać o zatwierdzeniu transakcji
@@ -252,7 +253,18 @@ w szczególności dokument: `1_ora_modyf.pdf`
 
 ```sql
 
--- przyklady, kod, zrzuty ekranów, komentarz ...
+-- dodanie pola no_tickets do reservation oraz log
+ALTER TABLE reservation
+	ADD no_tickets INT CHECK (no_tickets > 0);
+ALTER TABLE log
+	ADD no_tickets INT CHECK (no_tickets > 0);
+
+-- aktualizacja istniejących danych
+BEGIN
+	UPDATE reservation SET no_tickets = 1 WHERE reservation_id IS NOT NULL;
+	UPDATE log SET no_tickets = 1 WHERE log_id IS NOT NULL;
+	COMMIT;
+END;
 
 ```
 
