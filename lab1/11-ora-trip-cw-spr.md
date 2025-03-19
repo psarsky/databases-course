@@ -364,10 +364,27 @@ Proponowany zestaw widoków można rozbudować wedle uznania/potrzeb
 # Zadanie 1  - rozwiązanie
 
 ```sql
+CREATE OR REPLACE VIEW vw_reservation AS
+SELECT
+	reservation_id, country, trip_date, trip_name, firstname, lastname, status, TRIP.trip_id, RESERVATION.person_id, no_tickets
+FROM
+	PERSON
+		JOIN RESERVATION ON PERSON.PERSON_ID = RESERVATION.PERSON_ID
+		JOIN TRIP ON RESERVATION.TRIP_ID = TRIP.TRIP_ID;
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+CREATE OR REPLACE VIEW vw_trip AS
+SELECT TRIP.trip_id, country, trip_date, trip_name, (TRIP.MAX_NO_PLACES-W1.COUNT) no_available_places
+FROM TRIP
+		 JOIN (
+	SELECT TRIP_ID, COUNT(*) AS COUNT
+	FROM RESERVATION
+	WHERE STATUS = 'N' OR STATUS = 'P'
+	GROUP BY TRIP_ID) W1 ON TRIP.TRIP_ID = W1.TRIP_ID;
 
-
+CREATE OR REPLACE VIEW vw_available_trip AS
+SELECT *
+FROM vw_trip
+WHERE no_available_places > 0 AND TRIP_DATE > SYSDATE
 
 ```
 
@@ -379,11 +396,11 @@ Proponowany zestaw widoków można rozbudować wedle uznania/potrzeb
 
 Tworzenie funkcji pobierających dane/tabele. Podobnie jak w poprzednim przykładzie należy przygotować kilka funkcji ułatwiających dostęp do danych
 
-Procedury:
+Funkcje:
 - `f_trip_participants`
 	- zadaniem funkcji jest zwrócenie listy uczestników wskazanej wycieczki
 	- parametry funkcji: `trip_id`
-	- funkcja zwraca podobny zestaw danych jak widok  `vw_eservation`
+	- funkcja zwraca podobny zestaw danych jak widok  `vw_reservation`
 -  `f_person_reservations`
 	- zadaniem funkcji jest zwrócenie listy rezerwacji danej osoby 
 	- parametry funkcji: `person_id`
@@ -416,7 +433,7 @@ Proponowany zestaw funkcji można rozbudować wedle uznania/potrzeb
 
 Tworzenie procedur modyfikujących dane. Należy przygotować zestaw procedur pozwalających na modyfikację danych oraz kontrolę poprawności ich wprowadzania
 
-Procedury
+Procedury:
 - `p_add_reservation`
 	- zadaniem procedury jest dopisanie nowej rezerwacji
 	- parametry: `trip_id`, `person_id`,  `no_tickets`
