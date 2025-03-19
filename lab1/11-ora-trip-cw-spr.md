@@ -253,18 +253,90 @@ w szczególności dokument: `1_ora_modyf.pdf`
 
 ```sql
 
--- dodanie pola no_tickets do reservation oraz log
+-- Dodanie pola no_tickets do reservation oraz log
 ALTER TABLE reservation
 	ADD no_tickets INT CHECK (no_tickets > 0);
 ALTER TABLE log
 	ADD no_tickets INT CHECK (no_tickets > 0);
 
--- aktualizacja istniejących danych
+-- Aktualizacja istniejących danych
 BEGIN
 	UPDATE reservation SET no_tickets = 1 WHERE reservation_id IS NOT NULL;
 	UPDATE log SET no_tickets = 1 WHERE log_id IS NOT NULL;
 	COMMIT;
 END;
+
+-- Wstawienie nowej rezerwacji
+BEGIN
+	INSERT INTO reservation (trip_id, person_id, status, no_tickets)
+	VALUES (3, 3, 'N', 2);
+
+	INSERT INTO log (reservation_id, log_date, status, no_tickets)
+	VALUES (3, SYSDATE, 'N', 2);
+
+	COMMIT;
+END;
+
+-- Wstawienie rezerwacji z symulowanym błędem i rollback
+BEGIN
+	INSERT INTO reservation (trip_id, person_id, status, no_tickets)
+	VALUES (4, 2, 'N', 1);
+
+	-- Symulacja błędu
+	RAISE_APPLICATION_ERROR(-20001, 'Error');
+
+	COMMIT;
+			EXCEPTION
+			WHEN OTHERS THEN
+	ROLLBACK;
+END;
+-- Rezerwacja nie została dodana
+
+BEGIN
+	-- Modyfikacja istniejącej rezerwacji
+	UPDATE reservation
+	SET trip_id    = 4,
+		person_id  = 4,
+		status     = 'C',
+		no_tickets = 5
+	WHERE reservation_id = 6;
+
+	-- Aktualizacja logów związanych z tą rezerwacją
+	UPDATE log
+	SET reservation_id = 6,
+		log_date       = SYSDATE,
+		status         = 'C',
+		no_tickets     = 5
+	WHERE log_id = 1;
+	COMMIT;
+END;
+
+BEGIN
+	-- Usunięcie wpisu w tabeli log
+	DELETE
+	FROM log
+	WHERE reservation_id IN (SELECT reservation_id
+							 FROM reservation
+							 WHERE trip_id = 4
+							   AND person_id = 4);
+
+	-- Usunięcie rezerwacji
+	DELETE
+	FROM reservation
+	WHERE trip_id = 4
+	  AND person_id = 4;
+
+	COMMIT;
+END;
+
+-- Ustawienie odpowiednich wartości sekwencji dla reservation i log
+ALTER SEQUENCE s_reservation_seq RESTART START WITH 6;
+ALTER SEQUENCE s_log_seq RESTART START WITH 1;
+
+-- Oracle: Używa BEGIN ... EXCEPTION ... END;, a COMMIT jest jawne. Jeśli nie wykonamy COMMIT, zmiany nie zostaną zapisane.
+-- MS SQL Server: Używa BEGIN TRANSACTION ... COMMIT TRANSACTION. Można dodać TRY ... CATCH dla obsługi błędów.
+-- Obsługa błędów: W Oracle błędy są przechwytywane przez EXCEPTION, w T-SQL przez TRY...CATCH.
+-- ROLLBACK: Działa podobnie w obu systemach – cofa wszystkie operacje od początku transakcji.
 
 ```
 
