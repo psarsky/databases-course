@@ -44,11 +44,11 @@ BEGIN
         person_id  = 4,
         status     = 'C',
         no_tickets = 5
-    WHERE reservation_id = 6;
+    WHERE reservation_id = 11;
 
     -- Aktualizacja logów związanych z tą rezerwacją
     UPDATE log
-    SET reservation_id = 6,
+    SET reservation_id = 11,
         log_date       = SYSDATE,
         status         = 'C',
         no_tickets     = 5
@@ -60,20 +60,16 @@ BEGIN
     -- Usunięcie wpisu w tabeli log
     DELETE
     FROM log
-    WHERE reservation_id IN (SELECT reservation_id
-                             FROM reservation
-                             WHERE trip_id = 4
-                               AND person_id = 4);
+    WHERE reservation_id = 11;
 
     -- Usunięcie rezerwacji
     DELETE
     FROM reservation
-    WHERE trip_id = 4
-      AND person_id = 4;
+    WHERE reservation_id = 11;
 
     COMMIT;
 END;
 
 -- Ustawienie odpowiednich wartości sekwencji dla reservation i log
-ALTER SEQUENCE s_reservation_seq RESTART START WITH 6;
+ALTER SEQUENCE s_reservation_seq RESTART START WITH 11;
 ALTER SEQUENCE s_log_seq RESTART START WITH 1;

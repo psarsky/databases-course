@@ -173,7 +173,7 @@ ALTER TABLE log
 Należy wypełnić  tabele przykładowymi danymi 
 - 4 wycieczki
 - 10 osób
-- 10  rezerwacji
+- 10 rezerwacji
 
 Dane testowe powinny być różnorodne (wycieczki w przyszłości, wycieczki w przeszłości, rezerwacje o różnym statusie itp.) tak, żeby umożliwić testowanie napisanych procedur.
 
@@ -181,18 +181,17 @@ W razie potrzeby należy zmodyfikować dane tak żeby przetestować różne przy
 
 
 ```sql
--- trip
 INSERT INTO trip(trip_name, country, trip_date, max_no_places)
-VALUES ('Wycieczka do Paryza', 'Francja', to_date('2023-09-12', 'YYYY-MM-DD'), 3);
+VALUES ('Wycieczka do Paryza', 'Francja', TO_DATE('2023-09-12', 'YYYY-MM-DD'), 3);
 
 INSERT INTO trip(trip_name, country, trip_date, max_no_places)
-VALUES ('Piekny Krakow', 'Polska', to_date('2025-05-03', 'YYYY-MM-DD'), 2);
+VALUES ('Piekny Krakow', 'Polska', TO_DATE('2025-05-03', 'YYYY-MM-DD'), 2);
 
 INSERT INTO trip(trip_name, country, trip_date, max_no_places)
-VALUES ('Znow do Francji', 'Francja', to_date('2025-05-01', 'YYYY-MM-DD'), 2);
+VALUES ('Znow do Francji', 'Francja', TO_DATE('2025-05-01', 'YYYY-MM-DD'), 3);
 
 INSERT INTO trip(trip_name, country, trip_date, max_no_places)
-VALUES ('Hel', 'Polska', to_date('2025-05-01', 'YYYY-MM-DD'), 2);
+VALUES ('Hel', 'Polska', TO_DATE('2025-05-01', 'YYYY-MM-DD'), 2);
 
 -- person
 INSERT INTO person(firstname, lastname)
@@ -202,10 +201,28 @@ INSERT INTO person(firstname, lastname)
 VALUES ('Jan', 'Kowalski');
 
 INSERT INTO person(firstname, lastname)
-VALUES ('Jan', 'Nowakowski');
+VALUES ('Anna', 'Nowakowska');
 
 INSERT INTO person(firstname, lastname)
-VALUES ('Novak', 'Nowak');
+VALUES ('Krzysztof', 'Nowak');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Natalia', 'Kamińska');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Alfred', 'Dąbrowski');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Mścisław', 'Kiełbasa');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Bogumił', 'Bąk');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Marian', 'Paździoch');
+
+INSERT INTO person(firstname, lastname)
+VALUES ('Bogumiła', 'Gwóźdź');
 
 -- reservation
 -- trip1
@@ -215,16 +232,32 @@ VALUES (1, 1, 'P');
 INSERT INTO reservation(trip_id, person_id, status)
 VALUES (1, 2, 'N');
 
--- trip 2  
 INSERT INTO reservation(trip_id, person_id, status)
-VALUES (2, 1, 'P');
+VALUES (1, 3, 'N');
 
 INSERT INTO reservation(trip_id, person_id, status)
-VALUES (2, 4, 'C');
+VALUES (1, 4, 'C');
 
--- trip 3  
+-- trip 2
 INSERT INTO reservation(trip_id, person_id, status)
 VALUES (2, 4, 'P');
+
+-- trip 3
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (3, 5, 'P');
+
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (3, 6, 'N');
+
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (3, 7, 'C');
+
+-- trip 4
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (4, 9, 'P');
+
+INSERT INTO reservation(trip_id, person_id, status)
+VALUES (4, 10, 'P');
 ```
 
 proszę pamiętać o zatwierdzeniu transakcji
@@ -252,7 +285,6 @@ w szczególności dokument: `1_ora_modyf.pdf`
 
 
 ```sql
-
 -- Dodanie pola no_tickets do reservation oraz log
 ALTER TABLE reservation
 	ADD no_tickets INT CHECK (no_tickets > 0);
@@ -299,11 +331,11 @@ BEGIN
 		person_id  = 4,
 		status     = 'C',
 		no_tickets = 5
-	WHERE reservation_id = 6;
+	WHERE reservation_id = 11;
 
 	-- Aktualizacja logów związanych z tą rezerwacją
 	UPDATE log
-	SET reservation_id = 6,
+	SET reservation_id = 11,
 		log_date       = SYSDATE,
 		status         = 'C',
 		no_tickets     = 5
@@ -315,30 +347,31 @@ BEGIN
 	-- Usunięcie wpisu w tabeli log
 	DELETE
 	FROM log
-	WHERE reservation_id IN (SELECT reservation_id
-							 FROM reservation
-							 WHERE trip_id = 4
-							   AND person_id = 4);
+	WHERE reservation_id = 11;
 
 	-- Usunięcie rezerwacji
 	DELETE
 	FROM reservation
-	WHERE trip_id = 4
-	  AND person_id = 4;
+	WHERE reservation_id = 11;
 
 	COMMIT;
 END;
 
 -- Ustawienie odpowiednich wartości sekwencji dla reservation i log
-ALTER SEQUENCE s_reservation_seq RESTART START WITH 6;
+ALTER SEQUENCE s_reservation_seq RESTART START WITH 11;
 ALTER SEQUENCE s_log_seq RESTART START WITH 1;
 
--- Oracle: Używa BEGIN ... EXCEPTION ... END;, a COMMIT jest jawne. Jeśli nie wykonamy COMMIT, zmiany nie zostaną zapisane.
--- MS SQL Server: Używa BEGIN TRANSACTION ... COMMIT TRANSACTION. Można dodać TRY ... CATCH dla obsługi błędów.
--- Obsługa błędów: W Oracle błędy są przechwytywane przez EXCEPTION, w T-SQL przez TRY...CATCH.
--- ROLLBACK: Działa podobnie w obu systemach – cofa wszystkie operacje od początku transakcji.
-
 ```
+Transakcja - mechanizm grupujący operacje na danych w jednostki. Jednostka może zostać wykonana 
+jedynie w całości albo wcale, co zapewnia spójność danych w bazie. 
+
+Polecenia zarządzające transakcjami:
+- `COMMIT` - zatwierdza zmiany dokonane w ramach bieżącej transakcji - dopiero po wykonaniu tego 
+polecenia zmiany zostają utrwalone.
+- `ROLLBACK` - cofa zmiany dokonane w ramach bieżącej transakcji, przywracając stan do momentu po 
+wykonaniu ostatniego polecenia `COMMIT`.
+
+Wystąpienie błędu podczas transakcji powoduje jej unieważnienie.
 
 ---
 # Zadanie 1 - widoki
@@ -350,10 +383,10 @@ Widoki:
 -   `vw_reservation`
 	- widok łączy dane z tabel: `trip`,  `person`,  `reservation`
 	- zwracane dane:  `reservation_id`,  `country`, `trip_date`, `trip_name`, `firstname`, `lastname`, `status`, `trip_id`, `person_id`, `no_tickets`
-- `vw_trip` 
+-   `vw_trip` 
 	- widok pokazuje liczbę wolnych miejsc na każdą wycieczkę
 	- zwracane dane: `trip_id`, `country`, `trip_date`, `trip_name`, `max_no_places`, `no_available_places` (liczba wolnych miejsc)
--  `vw_available_trip`
+-   `vw_available_trip`
 	- podobnie jak w poprzednim punkcie, z tym że widok pokazuje jedynie dostępne wycieczki (takie które są w przyszłości i są na nie wolne miejsca)
 
 
@@ -434,11 +467,128 @@ Proponowany zestaw funkcji można rozbudować wedle uznania/potrzeb
 # Zadanie 2  - rozwiązanie
 
 ```sql
+-- Definicja typu uczestnika wycieczki
+CREATE OR REPLACE TYPE trip_participants AS OBJECT
+(
+    reservation_id int,
+    person_id      int,
+    firstname      varchar(50),
+    lastname       varchar(50),
+    status         char(1),
+    no_tickets     int
+);
 
--- wyniki, kod, zrzuty ekranów, komentarz ...
+CREATE OR REPLACE TYPE trip_participants_table IS TABLE OF trip_participants;
+
+-- f_trip_participants - zwraca listę uczestników wskazanej wycieczki
+CREATE OR REPLACE FUNCTION f_trip_participants(trip_id int)
+RETURN trip_participants_table
+	AS
+    result trip_participants_table;
+valid  int;
+BEGIN
+	SELECT COUNT(*)
+	INTO valid
+	FROM trip t
+	WHERE t.trip_id = f_trip_participants.trip_id;
+
+	IF valid = 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Invalid trip ID');
+END IF;
+
+SELECT trip_participants(r.reservation_id, r.person_id, p.firstname, p.lastname, r.status,
+						 r.no_tickets) BULK COLLECT
+    INTO result
+    FROM reservation r
+             INNER JOIN person p ON r.person_id = p.person_id
+    WHERE r.trip_id = f_trip_participants.trip_id
+      AND r.status = 'P';
+RETURN result;
+END;
+
+
+-- Definicja typu rezerwacji
+CREATE OR REPLACE TYPE reservation_type AS OBJECT
+(
+    reservation_id int,
+    trip_name      varchar(100),
+    status         char(1),
+    no_tickets     int
+);
+
+CREATE OR REPLACE TYPE reservation_table IS TABLE OF reservation_type;
+
+-- f_person_reservations - zwraca listę rezerwacji danej osoby
+CREATE OR REPLACE FUNCTION f_person_reservations(person_id int)
+RETURN reservation_table
+	AS
+    result reservation_table;
+valid  int;
+BEGIN
+	SELECT COUNT(*)
+	INTO valid
+	FROM person p
+	WHERE p.person_id = f_person_reservations.person_id;
+
+	IF valid = 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Invalid person ID');
+END IF;
+
+SELECT reservation_type(r.reservation_id, t.trip_name, r.status, r.no_tickets) BULK COLLECT
+    INTO result
+    FROM reservation r
+             INNER JOIN trip t ON r.trip_id = t.trip_id
+    WHERE r.person_id = f_person_reservations.person_id;
+RETURN result;
+END;
+
+
+-- Definicja typu wycieczki
+CREATE OR REPLACE TYPE trip_type AS OBJECT
+(
+    trip_id             int,
+    country             varchar(50),
+    trip_date           date,
+    trip_name           varchar(100),
+    no_available_places int
+);
+
+CREATE OR REPLACE TYPE trip_table IS TABLE OF trip_type;
+
+-- f_available_trips_to - zwraca listę wycieczek do wskazanego kraju dostępnych w zadanym okresie
+CREATE OR REPLACE FUNCTION f_available_trips_to(country varchar, date_from date, date_to date)
+RETURN trip_table
+	AS
+    result trip_table;
+valid  int;
+BEGIN
+	SELECT COUNT(*)
+	INTO valid
+	FROM trip t
+	WHERE t.country = f_available_trips_to.country;
+
+	IF valid = 0 THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Invalid country name');
+END IF;
+
+SELECT trip_type(v.trip_id, v.country, v.trip_date, v.trip_name, v.no_available_places) BULK COLLECT
+    INTO result
+    FROM vw_trip v
+    WHERE v.no_available_places > 0
+      AND v.country = f_available_trips_to.country
+      AND v.trip_date BETWEEN date_from AND date_to;
+RETURN result;
+END;
 
 ```
+Kontrola parametrów jest przydatnym rozwiązaniem - w przypadku zdefiniowanych powyżej funkcji 
+pozwala zróżnicować sytuację, w której dla podanego parametru zbiór wynikowy jest pusty, od 
+sytuacji, w której podany parametr nie występuje w bazie danych. Bez kontroli parametrów funkcje 
+w obu sytuacjach zwracają puste tablice, a po wprowadzeniu kontroli zwracają błędy przy podaniu 
+parametrów niezgodnych z danymi w bazie (np. nieistniejący identyfikator użytkownika).
 
+W ogólnym przypadku korzyścią płynącą z kontroli parametrów jest również możliwość zdefiniowania
+komunikatów wyświetlanych przy wystąpieniu różnych rodzajów błędów związanych z parametrami.
 
 ---
 # Zadanie 3  - procedury
