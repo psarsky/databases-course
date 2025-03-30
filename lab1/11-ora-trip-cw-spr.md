@@ -433,7 +433,20 @@ WHERE no_available_places > 0
   AND TRIP_DATE > SYSDATE
 
 ```
+```sql
+SELECT * FROM VW_AVAILABLE_TRIP
+```
+![](_img/vw_available_trip.png)
 
+```sql
+SELECT * FROM VW_RESERVATION
+```
+![](_img/vw_reservation.png)
+
+```sql
+SELECT * FROM VW_TRIP
+```
+![](_img/vw_trip.png)
 
 
 ---
@@ -581,6 +594,26 @@ RETURN result;
 END;
 
 ```
+```sql
+SELECT * FROM F_TRIP_PARTICIPANTS(4)
+```
+![](_img/f_trip_participants.png)
+
+```sql
+SELECT * FROM F_PERSON_RESERVATIONS(4)
+```
+![](_img/f_person_reservations.png)
+
+```sql
+SELECT * FROM F_AVAILABLE_TRIPS_TO('Polska', SYSDATE, TO_DATE('2025-05-30', 'YYYY-MM-DD'))
+```
+![](_img/f_available_trips_to.png)
+
+```sql
+SELECT * FROM F_AVAILABLE_TRIPS_TO('San Escobar', SYSDATE, TO_DATE('2025-05-30', 'YYYY-MM-DD'))
+```
+![](_img/f_available_trips_to_err.png)
+
 Kontrola parametrów jest przydatnym rozwiązaniem - w przypadku zdefiniowanych powyżej funkcji 
 pozwala zróżnicować sytuację, w której dla podanego parametru zbiór wynikowy jest pusty, od 
 sytuacji, w której podany parametr nie występuje w bazie danych. Bez kontroli parametrów funkcje 
