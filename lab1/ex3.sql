@@ -87,7 +87,13 @@ IS
     v_status CHAR(1);
     v_log_id NUMBER;
     v_log_date DATE;
+    v_trip_id NUMBER;
 BEGIN
+     --Pobranie trip_id
+    SELECT RESERVATION.TRIP_ID
+    INTO v_trip_id
+    FROM RESERVATION
+    WHERE RESERVATION.RESERVATION_ID = p_modify_reservation_status.reservation_id;
     -- Pobranie liczby miejsc i statusu rezerwacji
     SELECT NO_TICKETS, STATUS
     INTO v_no_tickets, v_status
@@ -97,7 +103,7 @@ BEGIN
     -- Pobranie sumy już zarezerwowanych biletów
     SELECT COALESCE(SUM(NO_TICKETS), 0)
     INTO v_total_tickets
-    FROM TABLE(f_trip_participants(p_modify_reservation_status.reservation_id));
+    FROM TABLE(f_trip_participants(v_trip_id));
 
     -- Pobranie maksymalnej liczby miejsc i daty wycieczki
     SELECT MAX_NO_PLACES, trip_date
@@ -153,7 +159,14 @@ IS
     v_status CHAR(1);
     v_log_id NUMBER;
     v_log_date DATE;
+    v_trip_id NUMBER;
 BEGIN
+     --Pobranie trip_id
+    SELECT RESERVATION.TRIP_ID
+    INTO v_trip_id
+    FROM RESERVATION
+    WHERE RESERVATION.RESERVATION_ID = p_modify_reservation.reservation_id;
+     
     -- Pobranie liczby miejsc
     SELECT NO_TICKETS, STATUS
     INTO v_no_tickets, v_status
@@ -163,7 +176,7 @@ BEGIN
     -- Pobranie sumy już zarezerwowanych biletów
     SELECT COALESCE(SUM(NO_TICKETS), 0)
     INTO v_total_tickets
-    FROM TABLE(f_trip_participants(p_modify_reservation.reservation_id));
+    FROM TABLE(f_trip_participants(v_trip_id));
 
     -- Pobranie maksymalnej liczby miejsc i daty wycieczki
     SELECT MAX_NO_PLACES, trip_date
