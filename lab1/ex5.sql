@@ -1,14 +1,16 @@
 CREATE OR REPLACE TRIGGER tr_check_availability
-AFTER INSERT OR UPDATE ON RESERVATION
-FOR EACH ROW
+    AFTER INSERT OR UPDATE
+    ON RESERVATION
+    FOR EACH ROW
 DECLARE
     PRAGMA AUTONOMOUS_TRANSACTION;
     v_total_tickets NUMBER;
-    v_max_tickets NUMBER;
+    v_max_tickets   NUMBER;
 BEGIN
     -- Pobranie maksymalnej liczby miejsc na wycieczkę
-    SELECT MAX_NO_PLACES INTO v_max_tickets
-    FROM TRIP
+    SELECT t.MAX_NO_PLACES
+    INTO v_max_tickets
+    FROM TRIP t
     WHERE TRIP_ID = :NEW.TRIP_ID;
 
     -- Pobranie liczby już zarezerwowanych miejsc (bez aktualnej rezerwacji)
@@ -19,39 +21,37 @@ BEGIN
 
     -- Sprawdzenie dostępności miejsc
     IF v_total_tickets > v_max_tickets THEN
+        ROLLBACK;
         RAISE_APPLICATION_ERROR(-20001, 'Brak miejsc na wycieczkę!');
     END IF;
-
-    COMMIT;
 END;
+/
 
 CREATE OR REPLACE TRIGGER tr_log_reservation
-AFTER INSERT OR UPDATE ON RESERVATION
-FOR EACH ROW
-DECLARE
-    v_log_id NUMBER;
+    AFTER INSERT
+    ON RESERVATION
+    FOR EACH ROW
 BEGIN
-    -- Pobranie ID loga
-    SELECT s_log_seq.NEXTVAL INTO v_log_id FROM dual;
-
     -- Wstawienie loga
-    INSERT INTO LOG (LOG_ID, RESERVATION_ID, LOG_DATE, STATUS, NO_TICKETS)
-    VALUES (v_log_id, :NEW.RESERVATION_ID, SYSDATE, :NEW.STATUS, :NEW.NO_TICKETS);
+    INSERT INTO LOG (RESERVATION_ID, LOG_DATE, STATUS, NO_TICKETS)
+    VALUES (:NEW.RESERVATION_ID, SYSDATE, :NEW.STATUS, :NEW.NO_TICKETS);
 END;
-
 /
+
 CREATE OR REPLACE TRIGGER tr_update_ticket_count
-BEFORE UPDATE ON RESERVATION
-FOR EACH ROW
+    BEFORE UPDATE
+    ON RESERVATION
+    FOR EACH ROW
 BEGIN
     -- Jeśli ktoś zmienia liczbę biletów, sprawdź dostępność
     IF :NEW.NO_TICKETS <> :OLD.NO_TICKETS THEN
         DECLARE
             v_total_tickets NUMBER;
-            v_max_tickets NUMBER;
+            v_max_tickets   NUMBER;
         BEGIN
             -- Pobranie maksymalnej liczby miejsc
-            SELECT MAX_NO_PLACES INTO v_max_tickets
+            SELECT MAX_NO_PLACES
+            INTO v_max_tickets
             FROM TRIP
             WHERE TRIP_ID = :NEW.TRIP_ID;
 
@@ -59,7 +59,8 @@ BEGIN
             SELECT COALESCE(SUM(NO_TICKETS), 0)
             INTO v_total_tickets
             FROM RESERVATION
-            WHERE TRIP_ID = :NEW.TRIP_ID AND RESERVATION_ID <> :NEW.RESERVATION_ID;
+            WHERE TRIP_ID = :NEW.TRIP_ID
+              AND RESERVATION_ID <> :NEW.RESERVATION_ID;
 
             -- Sprawdzenie dostępności miejsc
             IF v_total_tickets + :NEW.NO_TICKETS > v_max_tickets THEN
@@ -71,27 +72,21 @@ END;
 /
 
 CREATE OR REPLACE PROCEDURE p_add_reservation_5(
-  trip_id IN INT,
-  person_id IN INT,
-  no_tickets IN INT,
-  status IN CHAR
+    trip_id IN INT,
+    person_id IN INT,
+    no_tickets IN INT,
+    status IN CHAR
 )
-IS
-  v_reservation_id NUMBER;
+    IS
 BEGIN
-  -- Pobranie nowego ID z sekwencji
-  SELECT s_reservation_seq.NEXTVAL INTO v_reservation_id FROM dual;
-
-  -- Wstawienie rezerwacji (sprawdzenie miejsc zrobi trigger)
-  INSERT INTO RESERVATION (RESERVATION_ID, TRIP_ID, PERSON_ID, STATUS, NO_TICKETS)
-  VALUES (v_reservation_id, p_add_reservation_5.trip_id, p_add_reservation_5.person_id, p_add_reservation_5.status, p_add_reservation_5.no_tickets);
-
-  COMMIT;
-  RETURN;
+    -- Wstawienie rezerwacji (sprawdzenie miejsc zrobi trigger)
+    INSERT INTO RESERVATION (TRIP_ID, PERSON_ID, STATUS, NO_TICKETS)
+    VALUES (p_add_reservation_5.trip_id, p_add_reservation_5.person_id, p_add_reservation_5.status,
+            p_add_reservation_5.no_tickets);
+    RETURN;
 EXCEPTION
-  WHEN OTHERS THEN
-    ROLLBACK;
-    DBMS_OUTPUT.PUT_LINE('Błąd: ' || SQLERRM);
+    WHEN OTHERS THEN
+        RAISE;
 END;
 /
 
@@ -99,14 +94,12 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status_5(
     reservation_id IN INT,
     status IN CHAR
 )
-IS
+    IS
 BEGIN
     -- Aktualizacja statusu (trigger sprawdzi poprawność zmiany)
     UPDATE RESERVATION
-    SET STATUS = status
-    WHERE RESERVATION_ID = reservation_id;
-
-    COMMIT;
+    SET STATUS = p_modify_reservation_status_5.status
+    WHERE RESERVATION_ID = p_modify_reservation_status_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
@@ -117,14 +110,12 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_5(
     reservation_id IN INT,
     no_tickets IN INT
 )
-IS
+    IS
 BEGIN
     -- Aktualizacja liczby miejsc w rezerwacji (walidacja miejsc będzie w triggerze)
     UPDATE RESERVATION
-    SET NO_TICKETS = no_tickets
-    WHERE RESERVATION_ID = reservation_id;
-
-    COMMIT;
+    SET NO_TICKETS = p_modify_reservation_5.no_tickets
+    WHERE RESERVATION_ID = p_modify_reservation_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
