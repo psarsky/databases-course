@@ -138,6 +138,7 @@ BEGIN
 EXCEPTION
 WHEN OTHERS THEN
 ROLLBACK;
+RAISE_APPLICATION_ERROR(-20000,SQLERRM);
 END;
 _____________________________________________________________________________________________________________________________
 CREATE OR REPLACE PROCEDURE p_modify_reservation(
@@ -175,7 +176,7 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20002, 'Błąd: Nie można zmieniać rezerwacji na przeszłą wycieczkę!');
     END IF;
 
-    IF p_modify_reservation.no_tickets - v_no_tickets + v_total_tickets > v_max_tickets THEN
+    IF (p_modify_reservation.no_tickets - v_no_tickets + v_total_tickets) > v_max_tickets THEN
         RAISE_APPLICATION_ERROR(-20003, 'Błąd: Brak wystarczającej liczby miejsc na wycieczkę!');
     end if;
 
@@ -195,4 +196,50 @@ BEGIN
 EXCEPTION
 WHEN OTHERS THEN
 ROLLBACK;
+RAISE_APPLICATION_ERROR(-20000,SQLERRM);
+END;
+________________________________________________________
+CREATE OR REPLACE PROCEDURE p_modify_max_no_places(
+    trip_id IN INT,
+    max_no_places IN INT
+)
+IS
+    v_total_tickets NUMBER; -- Suma już zarezerwowanych biletów
+    v_trip_date DATE;
+    v_log_id NUMBER;
+    v_log_date DATE;
+BEGIN
+    -- Pobranie sumy już zarezerwowanych biletów
+    SELECT COALESCE(SUM(NO_TICKETS), 0), trip_date
+    INTO v_total_tickets, v_trip_date
+    FROM RESERVATION
+    JOIN TRIP ON RESERVATION.TRIP_ID=TRIP.TRIP_ID
+    where TRIP.TRIP_ID = p_modify_max_no_places.trip_id
+    group by trip_date;
+
+    IF v_trip_date < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Błąd: Nie można zmieniać przeszłej wycieczki!');
+    END IF;
+
+    IF v_total_tickets > p_modify_max_no_places.max_no_places THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Błąd: Do tej pory już zapisano się na więcej miejsc niż wynosi nowy limit!');
+    end if;
+
+    -- Aktualizacja statusu
+    UPDATE TRIP
+    SET MAX_NO_PLACES = p_modify_max_no_places.max_no_places
+    WHERE TRIP.TRIP_ID = p_modify_max_no_places.trip_id;
+
+    -- Dodanie wpisu do logów
+    SELECT s_log_seq.NEXTVAL, SYSDATE INTO v_log_id, v_log_date FROM dual;
+    INSERT INTO LOG (log_id, RESERVATION_ID, LOG_DATE, STATUS, NO_TICKETS)
+    VALUES (v_log_id, 0, v_log_date, 'N', v_total_tickets);
+
+    COMMIT;
+    RETURN;
+
+EXCEPTION
+    WHEN OTHERS THEN
+    ROLLBACK;
+    RAISE_APPLICATION_ERROR(-20000,SQLERRM);
 END;
