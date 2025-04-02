@@ -84,9 +84,6 @@ BEGIN
     VALUES (p_add_reservation_5.trip_id, p_add_reservation_5.person_id, p_add_reservation_5.status,
             p_add_reservation_5.no_tickets);
     RETURN;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE;
 END;
 /
 
@@ -106,6 +103,7 @@ EXCEPTION
         RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 /
+
 CREATE OR REPLACE PROCEDURE p_modify_reservation_5(
     reservation_id IN INT,
     no_tickets IN INT

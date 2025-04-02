@@ -81,9 +81,9 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status(
     status IN char
 )
     IS
-    v_trip_date     date;
-    v_no_tickets    int;
-    valid   int;
+    v_trip_date  date;
+    v_no_tickets int;
+    valid        int;
 BEGIN
     -- Sprawdzenie podanego ID
     SELECT COUNT(*)
@@ -125,7 +125,7 @@ BEGIN
 
     -- Dodanie wpisu do logów
     INSERT INTO LOG (reservation_id, log_date, status, no_tickets)
-    VALUES ( p_modify_reservation_status.reservation_id, SYSDATE, p_modify_reservation_status.status,
+    VALUES (p_modify_reservation_status.reservation_id, SYSDATE, p_modify_reservation_status.status,
             v_no_tickets);
     RETURN;
 
@@ -134,7 +134,7 @@ EXCEPTION
         RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 
-    
+
 -- Zmiana ilości miejsc w rezerwacji
 CREATE OR REPLACE PROCEDURE p_modify_reservation(
     reservation_id IN int,
