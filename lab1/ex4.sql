@@ -59,7 +59,6 @@ CREATE OR REPLACE PROCEDURE p_add_reservation_4(
     v_trip_exist    int; -- Czy wycieczka istnieje
     v_error_message varchar2(4000); -- Komunikat błędu
 BEGIN
-    -- Pobranie nowego ID z sekwencji
     v_log_date := SYSDATE;
 
     -- Sprawdzenie, czy wycieczka istnieje
