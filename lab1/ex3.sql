@@ -80,9 +80,12 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status(
     status IN char
 )
     IS
-    v_trip_date  date;
-    v_no_tickets int;
-    valid        int;
+    v_trip_date      date;
+    v_no_tickets     int;
+    v_trip_id        int;
+    v_current_status char;
+    v_available      int;
+    valid            int;
 BEGIN
     -- Sprawdzenie podanego ID
     SELECT COUNT(*)
@@ -94,18 +97,23 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20001, 'Invalid reservation ID');
     END IF;
 
-    -- Pobranie liczby miejsc i statusu rezerwacji
-    SELECT r.no_tickets
-    INTO v_no_tickets
+    -- Pobranie liczby miejsc, obecnego statusu i ID wycieczki
+    SELECT r.no_tickets, r.trip_id, r.status
+    INTO v_no_tickets, v_trip_id, v_current_status
     FROM reservation r
     WHERE r.reservation_id = p_modify_reservation_status.reservation_id;
 
-    -- Pobranie maksymalnej liczby miejsc i daty wycieczki
+    -- Pobranie daty wycieczki
     SELECT trip_date
     INTO v_trip_date
     FROM trip
-             JOIN reservation ON trip.trip_id = reservation.trip_id
-    WHERE reservation.reservation_id = p_modify_reservation_status.reservation_id;
+    WHERE trip.trip_id = v_trip_id;
+
+    -- Pobranie ilości dostępnych miejsc
+    SELECT no_available_places
+    INTO v_available
+    FROM vw_trip t
+    WHERE t.trip_id = v_trip_id;
 
     -- Sprawdzenie poprawności statusu
     IF p_modify_reservation_status.status NOT IN ('C', 'P', 'N') THEN
@@ -115,6 +123,10 @@ BEGIN
     -- Sprawdzenie warunków dla anulowania rezerwacji
     IF v_trip_date < SYSDATE THEN
         RAISE_APPLICATION_ERROR(-20003, 'Cannot modify a past reservation');
+    END IF;
+
+    IF v_current_status = 'C' AND v_no_tickets > v_available THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Cannot modify status - not enough places');
     END IF;
 
     -- Aktualizacja statusu
@@ -147,7 +159,7 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation(
     v_status        char(1);
     v_trip_id       int;
 BEGIN
-    --Pobranie trip_id, liczby miejsc i statusu
+    --Pobranie trip_id, liczby biletów i statusu
     SELECT r.trip_id, r.no_tickets, r.status
     INTO v_trip_id, v_no_tickets, v_status
     FROM reservation r
@@ -167,6 +179,10 @@ BEGIN
 
     IF v_trip_date < SYSDATE THEN
         RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a past reservation!');
+    END IF;
+
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Cannot modify a cancelled reservation');
     END IF;
 
     IF (p_modify_reservation.no_tickets - v_no_tickets + v_total_tickets) > v_max_tickets THEN
@@ -205,6 +221,7 @@ BEGIN
     FROM reservation
              JOIN trip ON reservation.trip_id = trip.trip_id
     WHERE trip.trip_id = p_modify_max_no_places.trip_id
+    AND status IN ('N', 'P')
     GROUP BY trip_date;
 
     IF v_trip_date < SYSDATE THEN

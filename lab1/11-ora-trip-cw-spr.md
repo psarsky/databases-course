@@ -135,6 +135,7 @@ ALTER TABLE reservation
         (status IN ('N', 'P', 'C'));
 
 ```
+
 <div style="page-break-after: always"></div>
 
 ```sql
@@ -167,7 +168,7 @@ ALTER TABLE log
 ```
 ---
 
-<div style="page-break-after: always"></div>
+
 
 # Dane
 
@@ -327,7 +328,11 @@ EXCEPTION
         ROLLBACK;
 END;
 -- Rezerwacja nie została dodana
+```
 
+<div style="page-break-after: always"></div>
+
+```sql
 BEGIN
     -- Modyfikacja istniejącej rezerwacji
     UPDATE reservation
@@ -377,6 +382,44 @@ polecenia zmiany zostają utrwalone.
 wykonaniu ostatniego polecenia `COMMIT`.
 
 Wystąpienie błędu podczas transakcji powoduje jej unieważnienie.
+
+
+PL/SQL vs T-SQL – Transakcje
+
+Podobieństwa:
+- Oba systemy wspierają transakcje: BEGIN, COMMIT, ROLLBACK
+- Zmiany są trwałe dopiero po COMMIT
+- Błąd = ROLLBACK
+
+Różnice:
+
+1. Początek transakcji:
+- PL/SQL: automatyczny (lub z użyciem SAVEPOINT)
+- T-SQL: BEGIN TRANSACTION
+
+<div style="page-break-after: always"></div>
+
+2. Obsługa błędów:
+- PL/SQL:
+```sql
+BEGIN
+    -- operacje
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+END;
+```
+- T-SQL:
+```sql
+BEGIN TRY
+    -- operacje
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+END CATCH
+```
 
 ---
 
@@ -498,7 +541,6 @@ Proponowany zestaw funkcji można rozbudować wedle uznania/potrzeb
 # Zadanie 2  - rozwiązanie
 
 ```sql
--- Definicja typu uczestnika wycieczki
 CREATE OR REPLACE TYPE trip_participants AS OBJECT
 (
     reservation_id int,
@@ -539,8 +581,6 @@ BEGIN
     RETURN result;
 END;
 
-
--- Definicja typu rezerwacji
 CREATE OR REPLACE TYPE reservation_type AS OBJECT
 (
     reservation_id int,
@@ -573,12 +613,9 @@ BEGIN
         INNER JOIN trip t 
             ON r.trip_id = t.trip_id
     WHERE r.person_id = f_person_reservations.person_id;
-
     RETURN result;
 END;
 
-
--- Definicja typu wycieczki
 CREATE OR REPLACE TYPE trip_type AS OBJECT
 (
     trip_id             int,
@@ -615,8 +652,8 @@ BEGIN
 
     RETURN result;
 END;
-
 ```
+
 ## Działanie: 
 ```sql
 SELECT * FROM F_TRIP_PARTICIPANTS(4)
@@ -766,9 +803,12 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status(
     status IN char
 )
     IS
-    v_trip_date  date;
-    v_no_tickets int;
-    valid        int;
+    v_trip_date      date;
+    v_no_tickets     int;
+    v_trip_id        int;
+    v_current_status char;
+    v_available      int;
+    valid            int;
 BEGIN
     -- Sprawdzenie podanego ID
     SELECT COUNT(*)
@@ -780,18 +820,23 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20001, 'Invalid reservation ID');
     END IF;
 
-    -- Pobranie liczby miejsc i statusu rezerwacji
-    SELECT r.no_tickets
-    INTO v_no_tickets
+    -- Pobranie liczby miejsc, obecnego statusu i ID wycieczki
+    SELECT r.no_tickets, r.trip_id, r.status
+    INTO v_no_tickets, v_trip_id, v_current_status
     FROM reservation r
     WHERE r.reservation_id = p_modify_reservation_status.reservation_id;
 
-    -- Pobranie maksymalnej liczby miejsc i daty wycieczki
+    -- Pobranie daty wycieczki
     SELECT trip_date
     INTO v_trip_date
     FROM trip
-        JOIN reservation ON trip.trip_id = reservation.trip_id
-    WHERE reservation.reservation_id = p_modify_reservation_status.reservation_id;
+    WHERE trip.trip_id = v_trip_id;
+
+    -- Pobranie ilości dostępnych miejsc
+    SELECT no_available_places
+    INTO v_available
+    FROM vw_trip t
+    WHERE t.trip_id = v_trip_id;
 
     -- Sprawdzenie poprawności statusu
     IF p_modify_reservation_status.status NOT IN ('C', 'P', 'N') THEN
@@ -801,6 +846,10 @@ BEGIN
     -- Sprawdzenie warunków dla anulowania rezerwacji
     IF v_trip_date < SYSDATE THEN
         RAISE_APPLICATION_ERROR(-20003, 'Cannot modify a past reservation');
+    END IF;
+
+    IF v_current_status = 'C' AND v_no_tickets > v_available THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Cannot modify status - not enough places');
     END IF;
 
     -- Aktualizacja statusu
@@ -813,6 +862,10 @@ BEGIN
     VALUES (p_modify_reservation_status.reservation_id, SYSDATE, p_modify_reservation_status.status,
             v_no_tickets);
     RETURN;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 
 
@@ -829,7 +882,7 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation(
     v_status        char(1);
     v_trip_id       int;
 BEGIN
-    --Pobranie trip_id, liczby miejsc i statusu
+    --Pobranie trip_id, liczby biletów i statusu
     SELECT r.trip_id, r.no_tickets, r.status
     INTO v_trip_id, v_no_tickets, v_status
     FROM reservation r
@@ -844,11 +897,15 @@ BEGIN
     SELECT t.max_no_places, t.trip_date
     INTO v_max_tickets, v_trip_date
     FROM trip t
-        JOIN reservation r ON t.trip_id = r.trip_id
+             JOIN reservation r ON t.trip_id = r.trip_id
     WHERE r.reservation_id = p_modify_reservation.reservation_id;
 
     IF v_trip_date < SYSDATE THEN
         RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a past reservation!');
+    END IF;
+
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Cannot modify a cancelled reservation');
     END IF;
 
     IF (p_modify_reservation.no_tickets - v_no_tickets + v_total_tickets) > v_max_tickets THEN
@@ -865,6 +922,10 @@ BEGIN
     VALUES (p_modify_reservation.reservation_id, SYSDATE, v_status, p_modify_reservation.no_tickets);
 
     RETURN;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 
 
@@ -883,6 +944,7 @@ BEGIN
     FROM reservation
         JOIN trip ON reservation.trip_id = trip.trip_id
     WHERE trip.trip_id = p_modify_max_no_places.trip_id
+    AND status IN ('N', 'P')
     GROUP BY trip_date;
 
     IF v_trip_date < SYSDATE THEN
@@ -900,9 +962,9 @@ BEGIN
 
     RETURN;
 END;
-
-
 ```
+
+
 ## Działanie: 
 ```sql
 BEGIN
@@ -918,7 +980,6 @@ FROM log
 ORDER BY log_id DESC;
 ```
 ![](_img/p_add_reservation_res.png)
-![](_img/p_add_reservation_log.png)
 
 ```sql
 BEGIN
@@ -963,6 +1024,25 @@ ORDER BY trip_id DESC;
 ```
 ![](_img/p_modify_max_no_places.png)
 
+```sql
+SELECT *
+FROM reservation
+WHERE trip_id = 1
+ORDER BY reservation_id DESC;
+
+BEGIN
+    p_modify_reservation_status(4, 'N');
+END;
+```
+![](_img/p_modify_reservation_status_before.png)
+![](_img/p_modify_reservation_status_err.png)
+
+```sql
+BEGIN
+    p_modify_reservation(8, 3);
+END;
+```
+![](_img/p_modify_reservation_err.png)
 
 
 ---
@@ -1004,24 +1084,12 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE TRIGGER trg_modify_reservation_status
-    AFTER UPDATE OF STATUS
+CREATE OR REPLACE TRIGGER trg_modify_reservation
+    AFTER UPDATE
     ON RESERVATION
     FOR EACH ROW
 BEGIN
-    IF :OLD.STATUS != :NEW.STATUS THEN
-        INSERT INTO LOG (RESERVATION_ID, LOG_DATE, STATUS, NO_TICKETS)
-        VALUES (:NEW.RESERVATION_ID, SYSDATE, :NEW.STATUS, :NEW.NO_TICKETS);
-    END IF;
-END;
-/
-
-CREATE OR REPLACE TRIGGER trg_modify_reservation_tickets
-    AFTER UPDATE OF NO_TICKETS
-    ON RESERVATION
-    FOR EACH ROW
-BEGIN
-    IF :OLD.NO_TICKETS != :NEW.NO_TICKETS THEN
+    IF :OLD.STATUS != :NEW.STATUS OR :OLD.NO_TICKETS != :NEW.NO_TICKETS THEN
         INSERT INTO LOG (RESERVATION_ID, LOG_DATE, STATUS, NO_TICKETS)
         VALUES (:NEW.RESERVATION_ID, SYSDATE, :NEW.STATUS, :NEW.NO_TICKETS);
     END IF;
@@ -1215,7 +1283,7 @@ END;
 ## Działanie:
 ```sql
 BEGIN
-	p_add_reservation(4, 8, 1, 'N');
+	p_add_reservation_4(4, 8, 1, 'N');
 END;
 
 SELECT *
@@ -1313,7 +1381,6 @@ BEGIN
 
     -- Sprawdzenie dostępności miejsc
     IF v_total_tickets > v_max_tickets THEN
-        ROLLBACK;
         RAISE_APPLICATION_ERROR(-20001, 'Brak miejsc na wycieczkę!');
     END IF;
 END;
@@ -1330,6 +1397,7 @@ BEGIN
 END;
 /
 ```
+
 <div style="page-break-after: always"></div>
 
 ```sql
@@ -1338,26 +1406,22 @@ CREATE OR REPLACE TRIGGER tr_update_ticket_count
     ON RESERVATION
     FOR EACH ROW
 BEGIN
-    -- Jeśli ktoś zmienia liczbę biletów, sprawdź dostępność
     IF :NEW.NO_TICKETS <> :OLD.NO_TICKETS THEN
         DECLARE
             v_total_tickets NUMBER;
             v_max_tickets   NUMBER;
         BEGIN
-            -- Pobranie maksymalnej liczby miejsc
             SELECT MAX_NO_PLACES
             INTO v_max_tickets
             FROM TRIP
             WHERE TRIP_ID = :NEW.TRIP_ID;
 
-            -- Pobranie liczby już zarezerwowanych miejsc
             SELECT COALESCE(SUM(NO_TICKETS), 0)
             INTO v_total_tickets
             FROM RESERVATION
             WHERE TRIP_ID = :NEW.TRIP_ID
               AND RESERVATION_ID <> :NEW.RESERVATION_ID;
 
-            -- Sprawdzenie dostępności miejsc
             IF v_total_tickets + :NEW.NO_TICKETS > v_max_tickets THEN
                 RAISE_APPLICATION_ERROR(-20002, 'Nie można zmienić liczby biletów - brak miejsc!');
             END IF;
@@ -1374,7 +1438,6 @@ CREATE OR REPLACE PROCEDURE p_add_reservation_5(
 )
     IS
 BEGIN
-    -- Wstawienie rezerwacji (sprawdzenie miejsc zrobi trigger)
     INSERT INTO RESERVATION (TRIP_ID, PERSON_ID, STATUS, NO_TICKETS)
     VALUES (p_add_reservation_5.trip_id, p_add_reservation_5.person_id, p_add_reservation_5.status,
             p_add_reservation_5.no_tickets);
@@ -1388,13 +1451,11 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status_5(
 )
     IS
 BEGIN
-    -- Aktualizacja statusu (trigger sprawdzi poprawność zmiany)
     UPDATE RESERVATION
     SET STATUS = p_modify_reservation_status_5.status
     WHERE RESERVATION_ID = p_modify_reservation_status_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -1405,13 +1466,11 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_5(
 )
     IS
 BEGIN
-    -- Aktualizacja liczby miejsc w rezerwacji (walidacja miejsc będzie w triggerze)
     UPDATE RESERVATION
     SET NO_TICKETS = p_modify_reservation_5.no_tickets
     WHERE RESERVATION_ID = p_modify_reservation_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE;
 END;
 /
@@ -1451,6 +1510,7 @@ ORDER BY log_id DESC;
 ![](_img/p_modify_reservation_status_5_log.png)
 
 ---
+
 <div style="page-break-after: always"></div>
 
 # Zadanie 6
@@ -1479,13 +1539,13 @@ alter table trip add
 	- należy wykonać operację "przeliczenia"  liczby wolnych miejsc i aktualizacji pola  `no_available_places`
 ```sql
 BEGIN
-    FOR t IN (SELECT trip_id, max_no_places FROM trip)
-        LOOP
-            UPDATE trip t1
-            SET t1.no_available_places = t.max_no_places - NVL(
-                (SELECT COUNT(*) FROM reservation r WHERE r.trip_id = t.trip_id AND r.status IN ('N', 'P')), 0)
-            WHERE t1.trip_id = t.trip_id;
-        END LOOP;
+    UPDATE trip t
+    SET no_available_places = t.max_no_places - NVL(
+        (SELECT SUM(r.no_tickets)
+         FROM reservation r
+         WHERE r.trip_id = t.trip_id
+         AND r.status IN ('N', 'P')), 
+        0);
 END;
 ```
 
@@ -1535,7 +1595,7 @@ END;
 
 
 -- Procedury
-CREATE PROCEDURE p_modify_max_no_places_6(
+CREATE OR REPLACE PROCEDURE p_modify_max_no_places_6(
     trip_id IN int,
     max_no_places IN int
 )
@@ -1557,13 +1617,21 @@ BEGIN
     END IF;
 
     UPDATE trip
-    SET max_no_places = p_modify_max_no_places_6.max_no_places
+    SET max_no_places = p_modify_max_no_places_6.max_no_places,
+        no_available_places = p_modify_max_no_places_6.max_no_places - v_total_tickets
     WHERE trip.trip_id = p_modify_max_no_places_6.trip_id;
 
     RETURN;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 /
 ```
+
+<div style="page-break-after: always"></div>
+
 ## Działanie: 
 ```sql
 SELECT * FROM VW_AVAILABLE_TRIP_6
@@ -1623,44 +1691,60 @@ CREATE OR REPLACE PROCEDURE p_add_reservation_6a(
     status IN char
 )
     IS
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
     SELECT no_available_places
-    INTO v_max_no_places
+    INTO v_available_places
     FROM trip t
     WHERE t.trip_id = p_add_reservation_6a.trip_id;
 
-    IF v_max_no_places <= 0 THEN
+    IF v_available_places <= 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'Trip fully booked');
+    END IF;
+
+    IF p_add_reservation_6a.no_tickets > v_available_places THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Not enough places');
     END IF;
 
     INSERT INTO RESERVATION (TRIP_ID, PERSON_ID, STATUS, NO_TICKETS)
     VALUES (p_add_reservation_6a.trip_id, p_add_reservation_6a.person_id, p_add_reservation_6a.status,
             p_add_reservation_6a.no_tickets);
 
-    UPDATE trip SET no_available_places = v_max_no_places - 1 WHERE trip_id = p_add_reservation_6a.trip_id;
+    UPDATE trip
+    SET no_available_places = v_available_places - p_add_reservation_6a.no_tickets
+    WHERE trip_id = p_add_reservation_6a.trip_id;
 
     RETURN;
 END;
-/
 
 CREATE OR REPLACE PROCEDURE p_modify_reservation_status_6a(
     reservation_id IN int,
     status IN char
 ) IS
-    v_status  char(1);
-    v_trip_id int;
+    v_status           char(1);
+    v_trip_id          int;
+    v_no_tickets       int;
+    v_available_places int;
 BEGIN
 
-    SELECT r.status, r.trip_id
-    INTO v_status, v_trip_id
+    SELECT r.status, r.trip_id, r.no_tickets
+    INTO v_status, v_trip_id, v_no_tickets
     FROM reservation r
     WHERE r.reservation_id = p_modify_reservation_status_6a.reservation_id;
 
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = v_trip_id;
+
     IF v_status = 'C' THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+        IF v_no_tickets > v_available_places THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Not enough places');
+        END IF;
+        UPDATE trip
+        SET no_available_places = no_available_places - v_no_tickets
+        WHERE trip_id = v_trip_id;
     ELSIF v_status IN ('N', 'P') AND p_modify_reservation_status_6a.status = 'C' THEN
-        UPDATE trip SET no_available_places = no_available_places + 1 WHERE trip_id = v_trip_id;
+        UPDATE trip
+        SET no_available_places = no_available_places + v_no_tickets
+        WHERE trip_id = v_trip_id;
     END IF;
 
     UPDATE reservation
@@ -1676,18 +1760,28 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_6a(
     no_tickets IN INT
 )
     IS
-    v_ticket_diff   int;
-    v_max_no_places int;
-    v_trip_id       int;
+    v_ticket_diff      int;
+    v_available_places int;
+    v_trip_id          int;
+    v_status           char;
 BEGIN
-    SELECT t.no_available_places, p_modify_reservation_6a.no_tickets - r.no_tickets, t.trip_id
-    INTO v_max_no_places, v_ticket_diff, v_trip_id
+    SELECT r.status
+    INTO v_status
     FROM reservation r
-        JOIN trip t
-            ON r.trip_id = t.trip_id
     WHERE r.reservation_id = p_modify_reservation_6a.reservation_id;
 
-    IF v_ticket_diff > v_max_no_places THEN
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+    END IF;
+
+    SELECT t.no_available_places, p_modify_reservation_6a.no_tickets - r.no_tickets, t.trip_id
+    INTO v_available_places, v_ticket_diff, v_trip_id
+    FROM reservation r
+             JOIN trip t
+                  ON r.trip_id = t.trip_id
+    WHERE r.reservation_id = p_modify_reservation_6a.reservation_id;
+
+    IF v_ticket_diff > v_available_places THEN
         RAISE_APPLICATION_ERROR(-20001, 'Not enough available places');
     END IF;
 
@@ -1708,6 +1802,8 @@ ALTER TRIGGER tr_modify_reservation_tickets_6b DISABLE;
 ALTER TRIGGER tr_modify_reservation_status_6b DISABLE;
 ```
 
+<div style="page-break-after: always"></div>
+
 ## Działanie:
 ```sql
 BEGIN
@@ -1724,6 +1820,31 @@ ORDER BY log_id DESC;
 ```
 ![](_img/p_add_reservation_6a_res.png)
 ![](_img/p_add_reservation_6a_log.png)
+
+```sql
+SELECT *
+FROM trip
+WHERE trip_id = 4;
+
+BEGIN
+    p_add_reservation_6a(4, 3, 3, 'N');
+END;
+```
+![](_img/p_add_reservation_6a_before.png)
+![](_img/p_add_reservation_6a_err.png)
+
+```sql
+BEGIN
+    p_add_reservation_6a(4, 3, 2, 'N');
+END;
+
+SELECT *
+FROM trip
+WHERE trip_id = 4;
+```
+![](_img/p_add_reservation_6a_after.png)
+
+<div style="page-break-after: always"></div>
 
 ```sql
 BEGIN
@@ -1788,15 +1909,21 @@ CREATE OR REPLACE TRIGGER tr_add_reservation_6b
     ON reservation
     FOR EACH ROW
 DECLARE
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
-    SELECT no_available_places INTO v_max_no_places FROM trip WHERE trip_id = :new.trip_id;
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
 
-    IF v_max_no_places <= 0 THEN
+    IF :new.no_tickets > v_available_places THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Not enough places');
+    END IF;
+
+    IF v_available_places <= 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'Trip fully booked');
     END IF;
 
-    UPDATE trip SET no_available_places = no_available_places - 1 WHERE trip_id = :new.trip_id;
+    UPDATE trip
+    SET no_available_places = no_available_places - :new.no_tickets
+    WHERE trip_id = :new.trip_id;
 END;
 /
 
@@ -1805,75 +1932,102 @@ CREATE OR REPLACE TRIGGER tr_modify_reservation_status_6b
     BEFORE UPDATE OF status
     ON reservation
     FOR EACH ROW
+DECLARE
+    v_available_places int;
 BEGIN
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
+
     IF :old.status = 'C' THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+        IF :old.no_tickets > v_available_places THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Not enough places');
+        END IF;
+        UPDATE trip
+        SET no_available_places = no_available_places - :old.no_tickets
+        WHERE trip_id = :old.trip_id;
     ELSIF :old.status IN ('N', 'P') AND :new.status = 'C' THEN
-        UPDATE trip SET no_available_places = no_available_places + 1 WHERE trip_id = :new.trip_id;
+        UPDATE trip
+        SET no_available_places = no_available_places + :old.no_tickets
+        WHERE trip_id = :old.trip_id;
     END IF;
 END;
 /
+```
 
+<div style="page-break-after: always"></div>
+
+```sql
 -- Trigger obsługujący zmianę ilości biletów w rezerwacji
 CREATE OR REPLACE TRIGGER tr_modify_reservation_tickets_6b
-    AFTER UPDATE OF no_tickets
+    BEFORE UPDATE OF no_tickets
     ON reservation
     FOR EACH ROW
 DECLARE
-    v_ticket_diff   int;
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
-    SELECT no_available_places INTO v_max_no_places FROM trip WHERE trip_id = :new.trip_id;
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
 
-    SELECT :new.no_tickets - :old.no_tickets
-    INTO v_ticket_diff
-    FROM reservation
-    WHERE trip_id = :new.trip_id;
-
-    IF v_ticket_diff > v_max_no_places THEN
+    IF :new.no_tickets - :old.no_tickets > v_available_places THEN
         RAISE_APPLICATION_ERROR(-20001, 'Not enough available places');
     END IF;
 
     UPDATE trip
-    SET no_available_places = no_available_places - v_ticket_diff
+    SET no_available_places = no_available_places - :new.no_tickets + :old.no_tickets
     WHERE trip_id = :new.trip_id;
 END;
 /
 ```
 ## Działanie:
+
+```sql
+SELECT *
+FROM trip
+WHERE trip_id = 4;
+```
+![](_img/trip_4.png)
+
 ```sql
 BEGIN
-    -- procedura z zad. 5. nie musiała zostać zmodyfikowana
-	p_add_reservation_5(4, 6, 1, 'N');
+    p_add_reservation_5(4, 6, 3, 'N');
 END;
+```
+![](_img/p_add_reservation_6b_err.png)
 
-SELECT *
-FROM reservation
-ORDER BY reservation_id DESC;
-
-SELECT *
-FROM log
-ORDER BY log_id DESC;
+```sql
+BEGIN
+    p_add_reservation_5(4, 6, 2, 'N');
+END;
 ```
 ![](_img/p_add_reservation_6b_res.png)
 ![](_img/p_add_reservation_6b_log.png)
+![](_img/trip_4_after_add.png)
+
+<div style="page-break-after: always"></div>
 
 ```sql
 BEGIN
-    -- procedura z zad. 5. nie musiała zostać zmodyfikowana
-	p_modify_reservation_status_5(15, 'P');
+    p_modify_reservation_5(20, 3);
+END;
+```
+![](_img/p_modify_reservation_6b_err.png)
+
+```sql
+BEGIN
+    p_modify_reservation_5(20, 1);
+END;
+```
+![](_img/p_modify_reservation_6b_res.png)
+![](_img/p_modify_reservation_6b_log.png)
+![](_img/trip_4_after_mod.png)
+
+```sql
+BEGIN
+	p_modify_reservation_status_5(20, 'C');
 END;
 
-SELECT *
-FROM reservation
-ORDER BY reservation_id DESC;
-
-SELECT *
-FROM log
-ORDER BY log_id DESC;
 ```
 ![](_img/p_modify_reservation_status_6b_res.png)
 ![](_img/p_modify_reservation_status_6b_log.png)
+![](_img/trip_4_after_can.png)
 
 ---
 
@@ -1883,17 +2037,13 @@ ORDER BY log_id DESC;
 
 Porównaj sposób programowania w systemie Oracle PL/SQL ze znanym ci systemem/językiem MS Sqlserver T-SQL
 
-## Porównanie Oracle PL/SQL i Microsoft SQL Server T-SQL
-
-Oracle PL/SQL i Microsoft SQL Server T-SQL to dwa języki programowania używane do zarządzania bazami danych. Choć mają wiele wspólnych cech, istnieją między nimi istotne różnice.
-
-### Podobieństwa
+## Podobieństwa
 
 - **Programowanie proceduralne** – Oba języki umożliwiają tworzenie procedur składowanych, funkcji, wyzwalaczy i pakietów, co pozwala na bardziej złożone operacje na bazie danych.
 - **Obsługa transakcji** – Zarówno PL/SQL, jak i T-SQL pozwalają na grupowanie operacji w ramach jednej transakcji, zapewniając spójność danych.
 - **Zarządzanie błędami** – W obu przypadkach można obsługiwać błędy, choć sposoby ich implementacji różnią się. W T-SQL wykorzystuje się `TRY...CATCH`, a w PL/SQL stosuje się blok `BEGIN...EXCEPTION...END`.
 
-### Różnice
+## Różnice
 
 - **Struktura bloków kodu** – PL/SQL organizuje kod w bloki `DECLARE`, `BEGIN`, `EXCEPTION` i `END`, podczas gdy w T-SQL nie ma takiej struktury i kod zamyka się w `BEGIN...END`.
 - **Funkcje systemowe** – Każdy z języków ma własny zestaw wbudowanych funkcji. Przykładowo, w T-SQL funkcja `GETDATE()` zwraca bieżącą datę i godzinę, podczas gdy w PL/SQL używa się `SYSDATE`.

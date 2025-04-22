@@ -42,7 +42,7 @@ END;
 
 
 -- Procedury
-CREATE PROCEDURE p_modify_max_no_places_6(
+CREATE OR REPLACE PROCEDURE p_modify_max_no_places_6(
     trip_id IN int,
     max_no_places IN int
 )
@@ -64,7 +64,8 @@ BEGIN
     END IF;
 
     UPDATE trip
-    SET max_no_places = p_modify_max_no_places_6.max_no_places
+    SET max_no_places       = p_modify_max_no_places_6.max_no_places,
+        no_available_places = p_modify_max_no_places_6.max_no_places - v_total_tickets
     WHERE trip.trip_id = p_modify_max_no_places_6.trip_id;
 
     RETURN;
@@ -85,22 +86,28 @@ CREATE OR REPLACE PROCEDURE p_add_reservation_6a(
     status IN char
 )
     IS
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
     SELECT no_available_places
-    INTO v_max_no_places
+    INTO v_available_places
     FROM trip t
     WHERE t.trip_id = p_add_reservation_6a.trip_id;
 
-    IF v_max_no_places <= 0 THEN
+    IF v_available_places <= 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'Trip fully booked');
+    END IF;
+
+    IF p_add_reservation_6a.no_tickets > v_available_places THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Not enough places');
     END IF;
 
     INSERT INTO RESERVATION (TRIP_ID, PERSON_ID, STATUS, NO_TICKETS)
     VALUES (p_add_reservation_6a.trip_id, p_add_reservation_6a.person_id, p_add_reservation_6a.status,
             p_add_reservation_6a.no_tickets);
 
-    UPDATE trip SET no_available_places = v_max_no_places - 1 WHERE trip_id = p_add_reservation_6a.trip_id;
+    UPDATE trip
+    SET no_available_places = v_available_places - p_add_reservation_6a.no_tickets
+    WHERE trip_id = p_add_reservation_6a.trip_id;
 
     RETURN;
 END;
@@ -110,19 +117,30 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_status_6a(
     reservation_id IN int,
     status IN char
 ) IS
-    v_status  char(1);
-    v_trip_id int;
+    v_status           char(1);
+    v_trip_id          int;
+    v_no_tickets       int;
+    v_available_places int;
 BEGIN
 
-    SELECT r.status, r.trip_id
-    INTO v_status, v_trip_id
+    SELECT r.status, r.trip_id, r.no_tickets
+    INTO v_status, v_trip_id, v_no_tickets
     FROM reservation r
     WHERE r.reservation_id = p_modify_reservation_status_6a.reservation_id;
 
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = v_trip_id;
+
     IF v_status = 'C' THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+        IF v_no_tickets > v_available_places THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Not enough places');
+        END IF;
+        UPDATE trip
+        SET no_available_places = no_available_places - v_no_tickets
+        WHERE trip_id = v_trip_id;
     ELSIF v_status IN ('N', 'P') AND p_modify_reservation_status_6a.status = 'C' THEN
-        UPDATE trip SET no_available_places = no_available_places + 1 WHERE trip_id = v_trip_id;
+        UPDATE trip
+        SET no_available_places = no_available_places + v_no_tickets
+        WHERE trip_id = v_trip_id;
     END IF;
 
     UPDATE reservation
@@ -138,18 +156,28 @@ CREATE OR REPLACE PROCEDURE p_modify_reservation_6a(
     no_tickets IN INT
 )
     IS
-    v_ticket_diff   int;
-    v_max_no_places int;
-    v_trip_id       int;
+    v_ticket_diff      int;
+    v_available_places int;
+    v_trip_id          int;
+    v_status           char;
 BEGIN
+    SELECT r.status
+    INTO v_status
+    FROM reservation r
+    WHERE r.reservation_id = p_modify_reservation_6a.reservation_id;
+
+    IF v_status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+    END IF;
+
     SELECT t.no_available_places, p_modify_reservation_6a.no_tickets - r.no_tickets, t.trip_id
-    INTO v_max_no_places, v_ticket_diff, v_trip_id
+    INTO v_available_places, v_ticket_diff, v_trip_id
     FROM reservation r
              JOIN trip t
                   ON r.trip_id = t.trip_id
     WHERE r.reservation_id = p_modify_reservation_6a.reservation_id;
 
-    IF v_ticket_diff > v_max_no_places THEN
+    IF v_ticket_diff > v_available_places THEN
         RAISE_APPLICATION_ERROR(-20001, 'Not enough available places');
     END IF;
 
@@ -177,15 +205,21 @@ CREATE OR REPLACE TRIGGER tr_add_reservation_6b
     ON reservation
     FOR EACH ROW
 DECLARE
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
-    SELECT no_available_places INTO v_max_no_places FROM trip WHERE trip_id = :new.trip_id;
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
 
-    IF v_max_no_places <= 0 THEN
+    IF :new.no_tickets > v_available_places THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Not enough places');
+    END IF;
+
+    IF v_available_places <= 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'Trip fully booked');
     END IF;
 
-    UPDATE trip SET no_available_places = no_available_places - 1 WHERE trip_id = :new.trip_id;
+    UPDATE trip
+    SET no_available_places = no_available_places - :new.no_tickets
+    WHERE trip_id = :new.trip_id;
 END;
 /
 
@@ -194,37 +228,42 @@ CREATE OR REPLACE TRIGGER tr_modify_reservation_status_6b
     BEFORE UPDATE OF status
     ON reservation
     FOR EACH ROW
+DECLARE
+    v_available_places int;
 BEGIN
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
+
     IF :old.status = 'C' THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+        IF :old.no_tickets > v_available_places THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Not enough places');
+        END IF;
+        UPDATE trip
+        SET no_available_places = no_available_places - :old.no_tickets
+        WHERE trip_id = :old.trip_id;
     ELSIF :old.status IN ('N', 'P') AND :new.status = 'C' THEN
-        UPDATE trip SET no_available_places = no_available_places + 1 WHERE trip_id = :new.trip_id;
+        UPDATE trip
+        SET no_available_places = no_available_places + :old.no_tickets
+        WHERE trip_id = :old.trip_id;
     END IF;
 END;
 /
 
 -- Trigger obsługujący zmianę ilości biletów w rezerwacji
 CREATE OR REPLACE TRIGGER tr_modify_reservation_tickets_6b
-    AFTER UPDATE OF no_tickets
+    BEFORE UPDATE OF no_tickets
     ON reservation
     FOR EACH ROW
 DECLARE
-    v_ticket_diff   int;
-    v_max_no_places int;
+    v_available_places int;
 BEGIN
-    SELECT no_available_places INTO v_max_no_places FROM trip WHERE trip_id = :new.trip_id;
+    SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
 
-    SELECT :new.no_tickets - :old.no_tickets
-    INTO v_ticket_diff
-    FROM reservation
-    WHERE trip_id = :new.trip_id;
-
-    IF v_ticket_diff > v_max_no_places THEN
+    IF :new.no_tickets - :old.no_tickets > v_available_places THEN
         RAISE_APPLICATION_ERROR(-20001, 'Not enough available places');
     END IF;
 
     UPDATE trip
-    SET no_available_places = no_available_places - v_ticket_diff
+    SET no_available_places = no_available_places - :new.no_tickets + :old.no_tickets
     WHERE trip_id = :new.trip_id;
 END;
 /

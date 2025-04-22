@@ -21,7 +21,6 @@ BEGIN
 
     -- Sprawdzenie dostępności miejsc
     IF v_total_tickets > v_max_tickets THEN
-        ROLLBACK;
         RAISE_APPLICATION_ERROR(-20001, 'Brak miejsc na wycieczkę!');
     END IF;
 END;
@@ -41,7 +40,6 @@ END;
 CREATE OR REPLACE TRIGGER tr_update_ticket_count
     BEFORE UPDATE
     ON RESERVATION
-    FOR EACH ROW
 BEGIN
     -- Jeśli ktoś zmienia liczbę biletów, sprawdź dostępność
     IF :NEW.NO_TICKETS <> :OLD.NO_TICKETS THEN
@@ -99,7 +97,6 @@ BEGIN
     WHERE RESERVATION_ID = p_modify_reservation_status_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 /
@@ -116,7 +113,6 @@ BEGIN
     WHERE RESERVATION_ID = p_modify_reservation_5.reservation_id;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE_APPLICATION_ERROR(-20000, SQLERRM);
 END;
 /
