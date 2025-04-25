@@ -258,6 +258,10 @@ DECLARE
 BEGIN
     SELECT no_available_places INTO v_available_places FROM trip WHERE trip_id = :new.trip_id;
 
+    IF :new.status = 'C' THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Cannot modify a cancelled reservation');
+    END IF;
+
     IF :new.no_tickets - :old.no_tickets > v_available_places THEN
         RAISE_APPLICATION_ERROR(-20001, 'Not enough available places');
     END IF;
