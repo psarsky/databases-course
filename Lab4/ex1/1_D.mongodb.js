@@ -1,12 +1,14 @@
 // 1. Oryginalne kolekcje:
+use("north0");
+
 db.orders.aggregate([
   {
     $lookup: {
       from: "orderdetails",
       localField: "OrderID",
       foreignField: "OrderID",
-      as: "details"
-    }
+      as: "details",
+    },
   },
   { $unwind: "$details" },
   {
@@ -14,8 +16,8 @@ db.orders.aggregate([
       from: "customers",
       localField: "CustomerID",
       foreignField: "CustomerID",
-      as: "customer"
-    }
+      as: "customer",
+    },
   },
   { $unwind: "$customer" },
   {
@@ -28,10 +30,10 @@ db.orders.aggregate([
         $multiply: [
           "$details.UnitPrice",
           "$details.Quantity",
-          { $subtract: [1, "$details.Discount"] }
-        ]
-      }
-    }
+          { $subtract: [1, "$details.Discount"] },
+        ],
+      },
+    },
   },
   {
     $group: {
@@ -39,39 +41,40 @@ db.orders.aggregate([
         CustomerID: "$CustomerID",
         CompanyName: "$CompanyName",
         year: "$year",
-        month: "$month"
+        month: "$month",
       },
-      totalSales: { $sum: "$orderValue" }
-    }
+      totalSales: { $sum: "$orderValue" },
+    },
   },
   {
     $group: {
       _id: {
         CustomerID: "$_id.CustomerID",
-        CompanyName: "$_id.CompanyName"
+        CompanyName: "$_id.CompanyName",
       },
       Sale: {
         $push: {
           Year: "$_id.year",
           Month: "$_id.month",
-          Total: { $round: ["$totalSales", 2] }
-        }
-      }
-    }
+          Total: { $round: ["$totalSales", 2] },
+        },
+      },
+    },
   },
   {
     $project: {
       _id: 0,
       CustomerID: "$_id.CustomerID",
       CompanyName: "$_id.CompanyName",
-      Sale: 1
-    }
+      Sale: 1,
+    },
   },
-  { $sort: { CustomerID: 1 } }
-])
-
+  { $sort: { CustomerID: 1 } },
+]);
 
 // 2. OrdersInfo:
+use("north0");
+
 db.OrdersInfo.aggregate([
   {
     $project: {
@@ -79,8 +82,8 @@ db.OrdersInfo.aggregate([
       CompanyName: "$Customer.CompanyName",
       year: { $year: "$Dates.OrderDate" },
       month: { $month: "$Dates.OrderDate" },
-      orderValue: "$OrderTotal"
-    }
+      orderValue: "$OrderTotal",
+    },
   },
   {
     $group: {
@@ -88,39 +91,40 @@ db.OrdersInfo.aggregate([
         CustomerID: "$CustomerID",
         CompanyName: "$CompanyName",
         year: "$year",
-        month: "$month"
+        month: "$month",
       },
-      totalSales: { $sum: "$orderValue" }
-    }
+      totalSales: { $sum: "$orderValue" },
+    },
   },
   {
     $group: {
       _id: {
         CustomerID: "$_id.CustomerID",
-        CompanyName: "$_id.CompanyName"
+        CompanyName: "$_id.CompanyName",
       },
       Sale: {
         $push: {
           Year: "$_id.year",
           Month: "$_id.month",
-          Total: { $round: ["$totalSales", 2] }
-        }
-      }
-    }
+          Total: { $round: ["$totalSales", 2] },
+        },
+      },
+    },
   },
   {
     $project: {
       _id: 0,
       CustomerID: "$_id.CustomerID",
       CompanyName: "$_id.CompanyName",
-      Sale: 1
-    }
+      Sale: 1,
+    },
   },
-  { $sort: { CustomerID: 1 } }
-])
-
+  { $sort: { CustomerID: 1 } },
+]);
 
 // 3. CustomerInfo:
+use("north0");
+
 db.CustomerInfo.aggregate([
   { $unwind: "$Orders" },
   {
@@ -129,8 +133,8 @@ db.CustomerInfo.aggregate([
       CompanyName: "$CompanyName",
       year: { $year: "$Orders.Dates.OrderDate" },
       month: { $month: "$Orders.Dates.OrderDate" },
-      orderValue: "$Orders.OrderTotal"
-    }
+      orderValue: "$Orders.OrderTotal",
+    },
   },
   {
     $group: {
@@ -138,33 +142,33 @@ db.CustomerInfo.aggregate([
         CustomerID: "$CustomerID",
         CompanyName: "$CompanyName",
         year: "$year",
-        month: "$month"
+        month: "$month",
       },
-      totalSales: { $sum: "$orderValue" }
-    }
+      totalSales: { $sum: "$orderValue" },
+    },
   },
   {
     $group: {
       _id: {
         CustomerID: "$_id.CustomerID",
-        CompanyName: "$_id.CompanyName"
+        CompanyName: "$_id.CompanyName",
       },
       Sale: {
         $push: {
           Year: "$_id.year",
           Month: "$_id.month",
-          Total: { $round: ["$totalSales", 2] }
-        }
-      }
-    }
+          Total: { $round: ["$totalSales", 2] },
+        },
+      },
+    },
   },
   {
     $project: {
       _id: 0,
       CustomerID: "$_id.CustomerID",
       CompanyName: "$_id.CompanyName",
-      Sale: 1
-    }
+      Sale: 1,
+    },
   },
-  { $sort: { CustomerID: 1 } }
-])
+  { $sort: { CustomerID: 1 } },
+]);

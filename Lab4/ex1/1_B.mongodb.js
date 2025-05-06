@@ -1,8 +1,4 @@
-show dbs
-
-use north0
-
-show collections
+use("north0");
 
 db.OrdersInfo.aggregate([
   {
@@ -19,10 +15,10 @@ db.OrdersInfo.aggregate([
           Orderdetails: "$Orderdetails",
           Freight: "$Freight",
           OrderTotal: "$OrderTotal",
-          Shipment: "$Shipment"
-        }
-      }
-    }
+          Shipment: "$Shipment",
+        },
+      },
+    },
   },
   {
     $project: {
@@ -31,12 +27,14 @@ db.OrdersInfo.aggregate([
       CompanyName: 1,
       City: 1,
       Country: 1,
-      Orders: 1
-    }
+      Orders: 1,
+    },
   },
   {
-    $out: "CustomerInfo"
-  }
-])
+    $out: "CustomerInfo",
+  },
+]);
 
-db.CustomerInfo.find()
+use("north0");
+
+db.CustomerInfo.find().limit(2);
