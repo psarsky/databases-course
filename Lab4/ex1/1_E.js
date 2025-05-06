@@ -36,8 +36,9 @@ db.orderdetails.insertMany([
   }
 ]);
 
+
 // 2. OrdersInfo:
-let maxOrderID = db.orders.find().sort({OrderID: -1}).limit(1).toArray()[0].OrderID;
+let maxOrderID = db.OrdersInfo.find().sort({OrderID: -1}).limit(1).toArray()[0].OrderID;
 let newOrderID = maxOrderID + 1;
 
 let chaiProduct = db.products.findOne({ProductID: 1});
@@ -114,6 +115,7 @@ db.OrdersInfo.insertOne({
     ShipCountry: "Germany"
   }
 });
+
 
 // 3. CustomerInfo:
 let maxOrderID = db.orders.find().sort({OrderID: -1}).limit(1).toArray()[0].OrderID;

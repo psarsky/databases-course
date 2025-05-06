@@ -70,6 +70,7 @@ db.orders.aggregate([
   { $sort: { CustomerID: 1 } }
 ])
 
+
 // 2. OrdersInfo:
 db.OrdersInfo.aggregate([
   {
@@ -117,6 +118,7 @@ db.OrdersInfo.aggregate([
   },
   { $sort: { CustomerID: 1 } }
 ])
+
 
 // 3. CustomerInfo:
 db.CustomerInfo.aggregate([
