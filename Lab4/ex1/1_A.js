@@ -40,6 +40,9 @@ db.orders.aggregate([
     }
   },
   {
+    $unwind: "$Orderdetails"
+  },
+  {
     $lookup: {
       from: "shippers",
       localField: "ShipVia",
@@ -49,9 +52,6 @@ db.orders.aggregate([
   },
   {
     $unwind: "$Shipment.Shipper"
-  },
-  {
-    $unwind: "$Orderdetails"
   },
   {
     $lookup: {
