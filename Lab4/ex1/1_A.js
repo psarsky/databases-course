@@ -6,7 +6,7 @@ db.customers.find()
 
 show collections
 
-db.OrdersInfo.find();
+db.ordersinfo.find();
 
 db.products.find();
 
@@ -53,15 +53,15 @@ db.orders.aggregate([
     $unwind: "$Shipment.Shipper"
   },
   {
+    $unwind: "$Orderdetails"
+  },
+  {
     $lookup: {
       from: "products",
       localField: "Orderdetails.ProductID",
       foreignField: "ProductID",
       as: "Orderdetails.product"
     }
-  },
-  {
-    $unwind: "$Orderdetails"
   },
   {
     $unwind: "$Orderdetails.product"
@@ -98,8 +98,19 @@ db.orders.aggregate([
         $push: {
           UnitPrice: "$Orderdetails.UnitPrice",
           Quantity: "$Orderdetails.Quantity",
-          Discount: "$Orderdetails.Discount",
-          Value: { $multiply: [ "$Orderdetails.UnitPrice", "$Orderdetails.Quantity", { $subtract: [ 1, "$Orderdetails.Discount" ] } ] },
+          Discount: { $round: ["$Orderdetails.Discount", 2] },
+          Value: {
+            $round: [
+              {
+                $multiply: [
+                  "$Orderdetails.UnitPrice",
+                  "$Orderdetails.Quantity",
+                  { $subtract: [1, "$Orderdetails.Discount"] }
+                ]
+              },
+              2
+            ]
+          },
           product: {
             ProductID: "$Orderdetails.product.ProductID",
             ProductName: "$Orderdetails.product.ProductName",
@@ -125,8 +136,8 @@ db.orders.aggregate([
     }
   },
   {
-    $out: "OrdersInfo"
+    $out: "ordersinfo"
   }
-]).pretty()
+])
 
-db.OrdersInfo.find().pretty()
+db.ordersinfo.find()
