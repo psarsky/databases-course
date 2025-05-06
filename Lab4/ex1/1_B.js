@@ -4,9 +4,6 @@ use north0
 
 show collections
 
-db.CustomerOrders.find()
-
-
 db.OrdersInfo.aggregate([
   {
     $group: {
@@ -38,10 +35,8 @@ db.OrdersInfo.aggregate([
     }
   },
   {
-    $out: "CustomerOrders"  // <-- tutaj nowa kolekcja
+    $out: "CustomerInfo"
   }
 ])
 
-
-
-
+db.CustomerInfo.find()

@@ -6,8 +6,6 @@ db.customers.find()
 
 show collections
 
-db.ordersinfo.find();
-
 db.products.find();
 
 db.orders.aggregate([
@@ -136,8 +134,8 @@ db.orders.aggregate([
     }
   },
   {
-    $out: "ordersinfo"
+    $out: "OrdersInfo"
   }
 ])
 
-db.ordersinfo.find()
+db.OrdersInfo.find()
