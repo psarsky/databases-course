@@ -18,6 +18,15 @@ db.reservations.aggregate([
       as: "equipment",
     },
   },
+  { $unwind: "$equipment" },
+  {
+    $project: {
+      _id: 0,
+      name: "$equipment.name",
+      type: "$equipment.type",
+      size: "$equipment.size",
+    },
+  },
 ]);
 
 // 3. Add a new reservation
@@ -79,14 +88,7 @@ db.reservations.aggregate([
   },
 ]);
 
-// 7. Find all reservations for a specific item
-use("skiRentalDBv1");
-
-db.reservations.find({
-  equipmentIds: ObjectId("60d21b4667d0d8992e610c1a"),
-});
-
-// 8. Count total rentals for each equipment type
+// 7. Count total rentals for each equipment type
 use("skiRentalDBv1");
 
 db.reservations.aggregate([
@@ -108,7 +110,7 @@ db.reservations.aggregate([
   },
 ]);
 
-// 9. Get revenue summary by month
+// 8. Get revenue summary by month
 use("skiRentalDBv1");
 
 db.reservations.aggregate([
@@ -130,7 +132,7 @@ db.reservations.aggregate([
   },
 ]);
 
-// 10. Update equipment availability
+// 9. Update equipment availability
 use("skiRentalDBv1");
 
 db.equipment.updateOne(

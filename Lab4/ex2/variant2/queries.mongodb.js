@@ -9,15 +9,24 @@ db.clients.findOne(
 // 2. Find all equipment rented by a client
 use("skiRentalDBv2");
 
-db.clients.findOne(
-  { _id: ObjectId("60d21b4667d0d8992e610c22") },
-  { "reservations.equipment": 1 }
-);
+db.clients.aggregate([
+  { $match: { _id: ObjectId("60d21b4667d0d8992e610c22") } },
+  { $unwind: "$reservations" },
+  { $unwind: "$reservations.equipment" },
+  {
+    $project: {
+      _id: 0,
+      name: "$reservations.equipment.name",
+      type: "$reservations.equipment.type",
+      size: "$reservations.equipment.size",
+    },
+  },
+]);
 
 // 3. Add a new reservation
 use("skiRentalDBv2");
 
-db.clients_embedded.updateOne(
+db.clients.updateOne(
   { _id: ObjectId("60d21b4667d0d8992e610c22") },
   {
     $push: {
@@ -63,15 +72,27 @@ db.clients.updateOne(
 // 5. Find all reservations for a specific date range
 use("skiRentalDBv2");
 
-db.clients.find({
-  "reservations.startDate": { $gte: new Date("2025-01-01") },
-  "reservations.endDate": { $lte: new Date("2025-01-31") },
-});
+db.clients.aggregate([
+  { $unwind: "$reservations" },
+  {
+    $match: {
+      "reservations.startDate": { $gte: new Date("2025-01-01") },
+      "reservations.endDate": { $lte: new Date("2025-01-31") },
+    },
+  },
+  {
+    $project: {
+      name: 1,
+      email: 1,
+      reservations: 1,
+    },
+  },
+]);
 
 // 6. Get reservation details
 use("skiRentalDBv2");
 
-db.clients_embedded.aggregate([
+db.clients.aggregate([
   { $match: { _id: ObjectId("60d21b4667d0d8992e610c22") } },
   { $unwind: "$reservations" },
   { $match: { "reservations.startDate": new Date("2025-01-15") } },
@@ -86,17 +107,10 @@ db.clients_embedded.aggregate([
   },
 ]);
 
-// 7. Find all reservations for a specific item
+// 7. Count total rentals for each equipment type
 use("skiRentalDBv2");
 
-db.clients.find({
-  "reservations.equipment.equipmentId": ObjectId("60d21b4667d0d8992e610c1a"),
-});
-
-// 8. Count total rentals for each equipment type
-use("skiRentalDBv2");
-
-db.clients_embedded.aggregate([
+db.clients.aggregate([
   { $unwind: "$reservations" },
   { $unwind: "$reservations.equipment" },
   {
@@ -107,10 +121,10 @@ db.clients_embedded.aggregate([
   },
 ]);
 
-// 9. Get revenue summary by month
+// 8. Get revenue summary by month
 use("skiRentalDBv2");
 
-db.clients_embedded.aggregate([
+db.clients.aggregate([
   { $unwind: "$reservations" },
   {
     $project: {

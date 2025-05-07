@@ -2,48 +2,45 @@
 use("skiRentalDBv3");
 
 db.reservations.find({
-  clientId: ObjectId("60d21b4667d0d8992e610c1f"),
+  clientId: ObjectId("60d21b4667d0d8992e610c1e"),
 });
 
 // 2. Find all equipment rented by a client
 use("skiRentalDBv3");
 
-db.reservations.find(
-  { clientId: ObjectId("60d21b4667d0d8992e610c1e") },
-  { equipment: 1 }
-);
+db.reservations.aggregate([
+  { $match: { clientId: ObjectId("60d21b4667d0d8992e610c1e") } },
+  { $unwind: "$equipment" },
+  {
+    $project: {
+      _id: 0,
+      name: "$equipment.name",
+      type: "$equipment.type",
+    },
+  },
+]);
 
 // 3. Add a new reservation
 use("skiRentalDBv3");
 
-const client = db.clients.findOne({
-  _id: ObjectId("60d21b4667d0d8992e610c1e"),
-});
-
-const equipment = [
-  {
-    _id: ObjectId("60d21b4667d0d8992e610c1b"),
-    name: "Burton Custom",
-    type: "snowboard",
-  },
-  {
-    _id: ObjectId("60d21b4667d0d8992e610c1d"),
-    name: "Smith Vantage",
-    type: "helmet",
-  },
-];
-
-db.reservations_hybrid.insertOne({
+db.reservations.insertOne({
   clientId: ObjectId("60d21b4667d0d8992e610c1e"),
-  clientName: client.name,
-  equipment: equipment.map((e) => ({
-    equipmentId: e._id,
-    name: e.name,
-    type: e.type,
-  })),
-  startDate: new Date("2025-06-01"),
-  endDate: new Date("2025-06-03"),
-  totalCost: 80.0,
+  clientName: "John Smith",
+  equipment: [
+    {
+      equipmentId: ObjectId("60d21b4667d0d8992e610c1b"),
+      name: "Atomic Redster",
+      type: "ski",
+    },
+    {
+      equipmentId: ObjectId("60d21b4667d0d8992e610c1d"),
+      name: "Head Kore",
+      type: "helmet",
+    },
+  ],
+  startDate: new Date("2023-05-10"),
+  endDate: new Date("2023-05-15"),
+  totalCost: 150.0,
   status: "pending",
 });
 
@@ -58,7 +55,7 @@ db.reservations.updateOne(
 // 5. Find all reservations for a specific date range
 use("skiRentalDBv3");
 
-db.reservations_hybrid.find({
+db.reservations.find({
   startDate: { $gte: new Date("2025-01-01") },
   endDate: { $lte: new Date("2025-01-31") },
 });
@@ -66,19 +63,12 @@ db.reservations_hybrid.find({
 // 6. Get reservation details
 use("skiRentalDBv3");
 
-db.reservations_hybrid.findOne({ _id: ObjectId("60d21b4667d0d8992e610c24") });
+db.reservations.findOne({ _id: ObjectId("60d21b4667d0d8992e610c24") });
 
-// 7. Find all reservations for a specific item
+// 7. Count total rentals for each equipment type
 use("skiRentalDBv3");
 
-db.reservations.find({
-  "equipment.equipmentId": ObjectId("60d21b4667d0d8992e610c1a"),
-});
-
-// 8. Count total rentals for each equipment type
-use("skiRentalDBv3");
-
-db.reservations_hybrid.aggregate([
+db.reservations.aggregate([
   { $unwind: "$equipment" },
   {
     $group: {
@@ -88,10 +78,10 @@ db.reservations_hybrid.aggregate([
   },
 ]);
 
-// 9. Get revenue summary by month
+// 8. Get revenue summary by month
 use("skiRentalDBv3");
 
-db.reservations_hybrid.aggregate([
+db.reservations.aggregate([
   {
     $project: {
       month: { $month: "$startDate" },
