@@ -355,10 +355,12 @@ db.orders.aggregate([
 ]);
 ```
 
-### Działanie: 
+### Działanie:
+
 ```js
 db.OrdersInfo.find().limit(2);
 ```
+
 ```json
 [
   {
@@ -521,10 +523,12 @@ db.OrdersInfo.aggregate([
 ]);
 ```
 
-### Działanie: 
+### Działanie:
+
 ```js
 db.CustomerInfo.find().limit(2);
 ```
+
 ```json
 [
   {
@@ -804,7 +808,8 @@ db.CustomerInfo.aggregate([
 ]);
 ```
 
-## Działanie: 
+## Działanie:
+
 ```json
 [
   {
@@ -840,6 +845,7 @@ db.CustomerInfo.aggregate([
   (...)
 ]
 ```
+
 (output identyczny dla wszystkich trzech wariantów)
 
 ### Porównanie
@@ -1023,7 +1029,8 @@ db.CustomerInfo.aggregate([
 ]);
 ```
 
-### Działanie: 
+### Działanie:
+
 ```json
 [
   {
@@ -1086,6 +1093,7 @@ db.CustomerInfo.aggregate([
   (...)
 ]
 ```
+
 (output identyczny dla wszystkich trzech wariantów)
 
 ### Porównanie
@@ -1102,8 +1110,7 @@ let maxOrderID = db.orders
   .find()
   .sort({ OrderID: -1 })
   .limit(1)
-  .toArray()[0]
-  .OrderID;
+  .toArray()[0].OrderID;
 let newOrderID = maxOrderID + 1;
 
 db.orders.insertOne({
@@ -1144,8 +1151,7 @@ db.orderdetails.insertMany([
 let maxOrderID_ = db.OrdersInfo.find()
   .sort({ OrderID: -1 })
   .limit(1)
-  .toArray()[0]
-  .OrderID;
+  .toArray()[0].OrderID;
 let newOrderID_ = maxOrderID_ + 1;
 
 let chaiProduct = db.products.findOne({ ProductID: 1 });
@@ -1232,8 +1238,7 @@ let maxOrderID__ = db.orders
   .find()
   .sort({ OrderID: -1 })
   .limit(1)
-  .toArray()[0]
-  .OrderID;
+  .toArray()[0].OrderID;
 let newOrderID__ = maxOrderID__ + 1;
 
 let chaiProduct_ = db.products.findOne({ ProductID: 1 });
@@ -1317,10 +1322,12 @@ db.CustomerInfo.updateOne(
 );
 ```
 
-### Działanie: 
+### Działanie:
+
 ```js
 db.orders.find().sort({ OrderID: -1 }).limit(1);
 ```
+
 ```json
 [
   {
@@ -1348,9 +1355,11 @@ db.orders.find().sort({ OrderID: -1 }).limit(1);
   }
 ]
 ```
+
 ```js
 db.orderdetails.find().sort({ OrderID: -1 }).limit(2);
 ```
+
 ```json
 [
   {
@@ -1375,9 +1384,11 @@ db.orderdetails.find().sort({ OrderID: -1 }).limit(2);
   }
 ]
 ```
+
 ```js
 db.OrdersInfo.find().sort({ OrderID: -1 }).limit(1);
 ```
+
 ```json
 [
   {
@@ -1458,6 +1469,7 @@ db.OrdersInfo.find().sort({ OrderID: -1 }).limit(1);
 ```js
 db.CustomerInfo.find({ CustomerID: "ALFKI" });
 ```
+
 ```json
 [
   {
@@ -1542,7 +1554,6 @@ db.CustomerInfo.find({ CustomerID: "ALFKI" });
 - **OrdersInfo**: Jedna operacja, ale wymaga ręcznego obliczenia wartości zamówienia.
 - **CustomerInfo**: Podobnie złożona operacja, ale dane są zagnieżdżone, co może utrudniać późniejsze analizy.
 
-
 ## f)
 
 ```js
@@ -1551,8 +1562,7 @@ let maxOrderID = db.orders
   .find()
   .sort({ OrderID: -1 })
   .limit(1)
-  .toArray()[0].
-  OrderID;
+  .toArray()[0].OrderID;
 
 db.orderdetails.updateMany({ OrderID: maxOrderID }, [
   {
@@ -1566,8 +1576,7 @@ db.orderdetails.updateMany({ OrderID: maxOrderID }, [
 let maxOrderID_ = db.OrdersInfo.find()
   .sort({ OrderID: -1 })
   .limit(1)
-  .toArray()[0].
-  OrderID;
+  .toArray()[0].OrderID;
 
 db.OrdersInfo.updateOne({ OrderID: maxOrderID_ }, [
   {
@@ -1615,11 +1624,8 @@ db.OrdersInfo.updateOne({ OrderID: maxOrderID_ }, [
 ]);
 
 // 3. CustomerInfo:
-let maxOrderID__ = db.orders.find()
-  .sort({ OrderID: -1 })
-  .limit(1)
-  .toArray()[0]
-  .OrderID + 1;
+let maxOrderID__ =
+  db.orders.find().sort({ OrderID: -1 }).limit(1).toArray()[0].OrderID + 1;
 
 db.CustomerInfo.updateOne({ "Orders.OrderID": maxOrderID__ }, [
   {
@@ -1713,10 +1719,12 @@ db.CustomerInfo.updateOne({ "Orders.OrderID": maxOrderID__ }, [
 ]);
 ```
 
-### Działanie: 
+### Działanie:
+
 ```js
 db.orderdetails.find().sort({ OrderID: -1 }).limit(2);
 ```
+
 ```json
 [
   {
@@ -1741,9 +1749,11 @@ db.orderdetails.find().sort({ OrderID: -1 }).limit(2);
   }
 ]
 ```
+
 ```js
 db.OrdersInfo.find().sort({ OrderID: -1 }).limit(1);
 ```
+
 ```json
 [
   {
@@ -1818,9 +1828,11 @@ db.OrdersInfo.find().sort({ OrderID: -1 }).limit(1);
   }
 ]
 ```
+
 ```js
 db.CustomerInfo.find({ CustomerID: "ALFKI" });
 ```
+
 ```json
 [
   {
@@ -1905,6 +1917,7 @@ db.CustomerInfo.find({ CustomerID: "ALFKI" });
 - **OrdersInfo**: Bardziej złożona aktualizacja kolekcji, wymaga przeliczenia wartości zamówienia.
 - **CustomerInfo**: Najbardziej złożona operacja ze względu na zagnieżdżoną strukturę danych, również wymaga ręcznego przeliczenia.
 
+<div style="page-break-after: always"></div>
 
 # Zadanie 2 - modelowanie danych
 
@@ -1946,15 +1959,1169 @@ W sprawozdaniu należy zamieścić przykładowe dokumenty w formacie JSON ( pkt 
 
 Do sprawozdania należy kompletny zrzut wykonanych/przygotowanych baz danych (taki zrzut można wykonać np. za pomocą poleceń `mongoexport`, `mongdump` …) oraz plik z kodem operacji/zapytań w wersji źródłowej (np. plik .js, np. plik .md ), załącznik powinien mieć format zip
 
-## Zadanie 2 - rozwiązanie
+<div style="page-break-after: always"></div>
 
-> Wyniki:
->
-> przykłady, kod, zrzuty ekranów, komentarz ...
+# Zadanie 2 - rozwiązanie
 
-```js
---  ...
+## Wybrany problem: Wypożyczalnia sprzętu narciarskiego
+
+W ramach zadania porównujemy trzy różne podejścia do modelowania danych dla wypożyczalni sprzętu narciarskiego.
+
+## Propozycje struktur bazy danych
+
+### **Wariant 1: Struktura znormalizowana z referencjami**
+
+**Kolekcje:**
+
+- `equipment` - sprzęt dostępny do wypożyczenia
+- `clients` - dane klientów
+- `reservations` - rezerwacje z referencjami do klientów i sprzętu
+
+**Przykładowe dokumenty:**
+
+```json
+// Kolekcja: equipment
+{
+  "_id": ObjectId("60d21b4667d0d8992e610c1a"),
+  "name": "Rossignol Experience 76",
+  "type": "ski",
+  "size": "170cm",
+  "dailyRate": 25.0,
+  "isAvailable": true
+}
+
+// Kolekcja: clients
+{
+  "_id": ObjectId("60d21b4667d0d8992e610c1e"),
+  "name": "John Smith",
+  "email": "john.smith@example.com",
+  "phone": "555-123-4567"
+}
+
+// Kolekcja: reservations
+{
+  "_id": ObjectId("60d21b4667d0d8992e610c20"),
+  "clientId": ObjectId("60d21b4667d0d8992e610c1e"),
+  "equipmentIds": [
+    ObjectId("60d21b4667d0d8992e610c1a"),
+    ObjectId("60d21b4667d0d8992e610c1c")
+  ],
+  "startDate": ISODate("2025-01-15"),
+  "endDate": ISODate("2025-01-18"),
+  "totalCost": 120.0,
+  "status": "completed"
+}
 ```
+
+### **Wariant 2: Podejście z dokumentami zagnieżdżonymi**
+
+**Kolekcje:**
+
+- `clients` - dane klientów z zagnieżdżonymi rezerwacjami i danymi sprzętu
+
+**Przykładowy dokument:**
+
+```json
+// Kolekcja: clients
+{
+  "_id": ObjectId("60d21b4667d0d8992e610c22"),
+  "name": "John Smith",
+  "email": "john.smith@example.com",
+  "phone": "555-123-4567",
+  "reservations": [
+    {
+      "equipment": [
+        {
+          "equipmentId": ObjectId("60d21b4667d0d8992e610c1a"),
+          "name": "Rossignol Experience 76",
+          "type": "ski",
+          "size": "170cm",
+          "dailyRate": 25.0
+        },
+        {
+          "equipmentId": ObjectId("60d21b4667d0d8992e610c1c"),
+          "name": "Lange XT3",
+          "type": "boots",
+          "size": "27.5",
+          "dailyRate": 15.0
+        }
+      ],
+      "startDate": ISODate("2025-01-15"),
+      "endDate": ISODate("2025-01-18"),
+      "totalCost": 120.0,
+      "status": "completed"
+    }
+  ]
+}
+```
+
+### **Wariant 3: Podejście hybrydowe**
+
+**Kolekcje:**
+
+- `equipment` - przechowuje dane o sprzęcie
+- `clients` - przechowuje dane o klientach
+- `reservations` - przechowuje dane o rezerwacjach z częściowo zagnieżdżonymi danymi sprzętu i klientów
+
+**Przykładowy dokument:**
+
+```json
+// Kolekcja: reservations
+{
+  "_id": ObjectId("60d21b4667d0d8992e610c24"),
+  "clientId": ObjectId("60d21b4667d0d8992e610c1e"),
+  "clientName": "John Smith",
+  "equipment": [
+    {
+      "equipmentId": ObjectId("60d21b4667d0d8992e610c1a"),
+      "name": "Rossignol Experience 76",
+      "type": "ski"
+    },
+    {
+      "equipmentId": ObjectId("60d21b4667d0d8992e610c1c"),
+      "name": "Lange XT3",
+      "type": "boots"
+    }
+  ],
+  "startDate": ISODate("2025-01-15"),
+  "endDate": ISODate("2025-01-18"),
+  "totalCost": 120.0,
+  "status": "completed"
+}
+```
+
+<div style="page-break-after: always"></div>
+
+## Porównanie zapytań
+
+### **1. Znalezienie wszystkich rezerwacji dla klienta**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.find({
+    clientId: ObjectId("60d21b4667d0d8992e610c1e"),
+  });
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "$oid": "60d21b4667d0d8992e610c20"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "equipmentIds": [
+        {
+          "$oid": "60d21b4667d0d8992e610c1a"
+        },
+        {
+          "$oid": "60d21b4667d0d8992e610c1c"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-01-15T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-01-18T00:00:00Z"
+      },
+      "totalCost": 120,
+      "status": "cancelled"
+    },
+    {
+      "_id": {
+        "$oid": "681acc86ad09c722b955c56b"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "equipmentIds": [
+        {
+          "$oid": "60d21b4667d0d8992e610c1b"
+        },
+        {
+          "$oid": "60d21b4667d0d8992e610c1d"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-06-01T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-06-03T00:00:00Z"
+      },
+      "totalCost": 80,
+      "status": "pending"
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga tylko jednego zapytania, ale zwraca tylko identyfikatory sprzętu, bez szczegółowych informacji.
+
+<div style="page-break-after: always"></div>
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.findOne(
+    { _id: ObjectId("60d21b4667d0d8992e610c22") },
+    { reservations: 1 }
+  );
+  ```
+
+  **Wynik:**
+
+  ```json
+  {
+    "_id": {
+      "$oid": "60d21b4667d0d8992e610c22"
+    },
+    "reservations": [
+      {
+        "equipment": [
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1a"
+            },
+            "name": "Rossignol Experience 76",
+            "type": "ski",
+            "size": "170cm",
+            "dailyRate": 25
+          },
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1c"
+            },
+            "name": "Lange XT3",
+            "type": "boots",
+            "size": "27.5",
+            "dailyRate": 15
+          }
+        ],
+        "startDate": {
+          "$date": "2025-01-15T00:00:00Z"
+        },
+        "endDate": {
+          "$date": "2025-01-18T00:00:00Z"
+        },
+        "totalCost": 120,
+        "status": "cancelled"
+      },
+      {
+        "equipment": [
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1b"
+            },
+            "name": "Burton Custom",
+            "type": "snowboard",
+            "size": "158cm",
+            "dailyRate": 30
+          },
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1d"
+            },
+            "name": "Smith Vantage",
+            "type": "helmet",
+            "size": "M",
+            "dailyRate": 10
+          }
+        ],
+        "startDate": {
+          "$date": "2025-06-01T00:00:00Z"
+        },
+        "endDate": {
+          "$date": "2025-06-03T00:00:00Z"
+        },
+        "totalCost": 80,
+        "status": "pending"
+      }
+    ]
+  }
+  ```
+
+  **Komentarz:** Jednym zapytaniem pobiera wszystkie rezerwacje klienta wraz z pełnymi szczegółami sprzętu.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.find({
+    clientId: ObjectId("60d21b4667d0d8992e610c1e"),
+  });
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "$oid": "60d21b4667d0d8992e610c24"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "clientName": "John Smith",
+      "equipment": [
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1a"
+          },
+          "name": "Rossignol Experience 76",
+          "type": "ski"
+        },
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1c"
+          },
+          "name": "Lange XT3",
+          "type": "boots"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-01-15T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-01-18T00:00:00Z"
+      },
+      "totalCost": 120,
+      "status": "cancelled"
+    },
+    {
+      "_id": {
+        "$oid": "681acf10417e5b43ec12f103"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "clientName": "John Smith",
+      "equipment": [
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1b"
+          },
+          "name": "Burton Custom",
+          "type": "snowboard"
+        },
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1d"
+          },
+          "name": "Smith Vantage",
+          "type": "helmet"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-06-01T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-06-03T00:00:00Z"
+      },
+      "totalCost": 80,
+      "status": "pending"
+    }
+  ]
+  ```
+
+  **Komentarz:** Zapytanie proste jak w wariancie 1, ale zwraca także podstawowe informacje o sprzęcie bez dodatkowych zapytań.
+
+### **2. Znalezienie sprzętu wypożyczonego przez klienta**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.aggregate([
+    { $match: { clientId: ObjectId("60d21b4667d0d8992e610c1e") } },
+    {
+      $lookup: {
+        from: "equipment",
+        localField: "equipmentIds",
+        foreignField: "_id",
+        as: "equipment",
+      },
+    },
+    { $unwind: "$equipment" },
+    {
+      $project: {
+        _id: 0,
+        name: "$equipment.name",
+        type: "$equipment.type",
+        size: "$equipment.size",
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "name": "Rossignol Experience 76",
+      "type": "ski",
+      "size": "170cm"
+    },
+    {
+      "name": "Lange XT3",
+      "type": "boots",
+      "size": "27.5"
+    },
+    {
+      "name": "Burton Custom",
+      "type": "snowboard",
+      "size": "158cm"
+    },
+    {
+      "name": "Smith Vantage",
+      "type": "helmet",
+      "size": "M"
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga złożonej agregacji z operacją $lookup do połączenia z kolekcją equipment.
+
+<div style="page-break-after: always"></div>
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.aggregate([
+    { $match: { _id: ObjectId("60d21b4667d0d8992e610c22") } },
+    { $unwind: "$reservations" },
+    { $unwind: "$reservations.equipment" },
+    {
+      $project: {
+        _id: 0,
+        name: "$reservations.equipment.name",
+        type: "$reservations.equipment.type",
+        size: "$reservations.equipment.size",
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "name": "Rossignol Experience 76",
+      "type": "ski",
+      "size": "170cm"
+    },
+    {
+      "name": "Lange XT3",
+      "type": "boots",
+      "size": "27.5"
+    },
+    {
+      "name": "Burton Custom",
+      "type": "snowboard",
+      "size": "158cm"
+    },
+    {
+      "name": "Smith Vantage",
+      "type": "helmet",
+      "size": "M"
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga rozwinięcia zagnieżdżonych tablic, ale dane są już dostępne bez łączenia kolekcji.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.aggregate([
+    { $match: { clientId: ObjectId("60d21b4667d0d8992e610c1e") } },
+    { $unwind: "$equipment" },
+    {
+      $project: {
+        _id: 0,
+        name: "$equipment.name",
+        type: "$equipment.type",
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "name": "Rossignol Experience 76",
+      "type": "ski"
+    },
+    {
+      "name": "Lange XT3",
+      "type": "boots"
+    },
+    {
+      "name": "Burton Custom",
+      "type": "snowboard"
+    },
+    {
+      "name": "Smith Vantage",
+      "type": "helmet"
+    }
+  ]
+  ```
+
+  **Komentarz:** Prostsze niż w wariancie 1, wymaga tylko rozwinięcia tablicy bez operacji łączenia.
+
+### **3. Dodanie nowej rezerwacji**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.insertOne({
+    clientId: ObjectId("60d21b4667d0d8992e610c1e"),
+    equipmentIds: [
+      ObjectId("60d21b4667d0d8992e610c1b"),
+      ObjectId("60d21b4667d0d8992e610c1d"),
+    ],
+    startDate: new Date("2025-05-10"),
+    endDate: new Date("2025-05-15"),
+    totalCost: 150.0,
+    status: "pending",
+  });
+  ```
+
+  **Komentarz:** Proste dodanie dokumentu do kolekcji reservations.
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.updateOne(
+    { _id: ObjectId("60d21b4667d0d8992e610c22") },
+    {
+      $push: {
+        reservations: {
+          equipment: [
+            {
+              equipmentId: ObjectId("60d21b4667d0d8992e610c1b"),
+              name: "Burton Custom",
+              type: "snowboard",
+              size: "158cm",
+              dailyRate: 30.0,
+            },
+            {
+              equipmentId: ObjectId("60d21b4667d0d8992e610c1d"),
+              name: "Smith Vantage",
+              type: "helmet",
+              size: "M",
+              dailyRate: 10.0,
+            },
+          ],
+          startDate: new Date("2025-06-01"),
+          endDate: new Date("2025-06-03"),
+          totalCost: 80.0,
+          status: "pending",
+        },
+      },
+    }
+  );
+  ```
+
+  **Komentarz:** Wymaga wcześniejszego pobrania danych o sprzęcie i ich zagnieżdżenia w dokumencie klienta.
+
+<div style="page-break-after: always"></div>
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.insertOne({
+    clientId: ObjectId("60d21b4667d0d8992e610c1e"),
+    clientName: "John Smith",
+    equipment: [
+      {
+        equipmentId: ObjectId("60d21b4667d0d8992e610c1b"),
+        name: "Atomic Redster",
+        type: "ski",
+      },
+      {
+        equipmentId: ObjectId("60d21b4667d0d8992e610c1d"),
+        name: "Head Kore",
+        type: "helmet",
+      },
+    ],
+    startDate: new Date("2025-05-10"),
+    endDate: new Date("2025-05-15"),
+    totalCost: 150.0,
+    status: "pending",
+  });
+  ```
+
+  **Komentarz:** Wymaga wcześniejszego pobrania danych o sprzęcie i ich zagnieżdżenia w dokumencie klienta.
+
+### **4. Aktualizacja statusu rezerwacji**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.updateOne(
+    { _id: ObjectId("60d21b4667d0d8992e610c20") },
+    { $set: { status: "cancelled" } }
+  );
+  ```
+
+  **Komentarz:** Proste i wydajne - bezpośrednia aktualizacja dokumentu.
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.updateOne(
+    {
+      _id: ObjectId("60d21b4667d0d8992e610c22"),
+      "reservations.startDate": new Date("2025-01-15"),
+    },
+    { $set: { "reservations.$.status": "cancelled" } }
+  );
+  ```
+
+  **Komentarz:** Nieco bardziej złożone - wymaga identyfikacji konkretnej rezerwacji w tablicy po dacie i użycia operatora pozycyjnego $.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.updateOne(
+    { _id: ObjectId("60d21b4667d0d8992e610c24") },
+    { $set: { status: "cancelled" } }
+  );
+  ```
+
+  **Komentarz:** Identycznie jak w wariancie 1.
+
+### **5. Znalezienie rezerwacji w określonym zakresie dat**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.find({
+    startDate: { $gte: new Date("2025-01-01") },
+    endDate: { $lte: new Date("2025-01-31") },
+  });
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "$oid": "60d21b4667d0d8992e610c20"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "equipmentIds": [
+        {
+          "$oid": "60d21b4667d0d8992e610c1a"
+        },
+        {
+          "$oid": "60d21b4667d0d8992e610c1c"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-01-15T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-01-18T00:00:00Z"
+      },
+      "totalCost": 120,
+      "status": "cancelled"
+    }
+  ]
+  ```
+
+  **Komentarz:** Proste wyszukiwanie po datach w jednej kolekcji.
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.aggregate([
+    { $unwind: "$reservations" },
+    {
+      $match: {
+        "reservations.startDate": { $gte: new Date("2025-01-01") },
+        "reservations.endDate": { $lte: new Date("2025-01-31") },
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        email: 1,
+        reservations: 1,
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "$oid": "60d21b4667d0d8992e610c22"
+      },
+      "name": "John Smith",
+      "email": "john.smith@example.com",
+      "reservations": {
+        "equipment": [
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1a"
+            },
+            "name": "Rossignol Experience 76",
+            "type": "ski",
+            "size": "170cm",
+            "dailyRate": 25
+          },
+          {
+            "equipmentId": {
+              "$oid": "60d21b4667d0d8992e610c1c"
+            },
+            "name": "Lange XT3",
+            "type": "boots",
+            "size": "27.5",
+            "dailyRate": 15
+          }
+        ],
+        "startDate": {
+          "$date": "2025-01-15T00:00:00Z"
+        },
+        "endDate": {
+          "$date": "2025-01-18T00:00:00Z"
+        },
+        "totalCost": 120,
+        "status": "cancelled"
+      }
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga użycia agregacji i rozwinięcia tablicy rezerwacji.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.find({
+    startDate: { $gte: new Date("2025-01-01") },
+    endDate: { $lte: new Date("2025-01-31") },
+  });
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "$oid": "60d21b4667d0d8992e610c24"
+      },
+      "clientId": {
+        "$oid": "60d21b4667d0d8992e610c1e"
+      },
+      "clientName": "John Smith",
+      "equipment": [
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1a"
+          },
+          "name": "Rossignol Experience 76",
+          "type": "ski"
+        },
+        {
+          "equipmentId": {
+            "$oid": "60d21b4667d0d8992e610c1c"
+          },
+          "name": "Lange XT3",
+          "type": "boots"
+        }
+      ],
+      "startDate": {
+        "$date": "2025-01-15T00:00:00Z"
+      },
+      "endDate": {
+        "$date": "2025-01-18T00:00:00Z"
+      },
+      "totalCost": 120,
+      "status": "cancelled"
+    }
+  ]
+  ```
+
+  **Komentarz:** Identyczne jak w wariancie 1.
+
+<div style="page-break-after: always"></div>
+
+### **6. Ilości wypożyczeń różnych rodzajów sprzętu**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.aggregate([
+    { $unwind: "$equipmentIds" },
+    {
+      $lookup: {
+        from: "equipment",
+        localField: "equipmentIds",
+        foreignField: "_id",
+        as: "equipment",
+      },
+    },
+    { $unwind: "$equipment" },
+    {
+      $group: {
+        _id: "$equipment.type",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": "snowboard",
+      "count": 3
+    },
+    {
+      "_id": "ski",
+      "count": 1
+    },
+    {
+      "_id": "boots",
+      "count": 1
+    },
+    {
+      "_id": "helmet",
+      "count": 3
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga agregacji z operacją $lookup i złączeniem kolekcji.
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.aggregate([
+    { $unwind: "$reservations" },
+    { $unwind: "$reservations.equipment" },
+    {
+      $group: {
+        _id: "$reservations.equipment.type",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": "snowboard",
+      "count": 2
+    },
+    {
+      "_id": "ski",
+      "count": 1
+    },
+    {
+      "_id": "boots",
+      "count": 1
+    },
+    {
+      "_id": "helmet",
+      "count": 2
+    }
+  ]
+  ```
+
+  **Komentarz:** Wymaga rozwinięcia zagnieżdżonych tablic, ale bez łączenia kolekcji.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.aggregate([
+    { $unwind: "$equipment" },
+    {
+      $group: {
+        _id: "$equipment.type",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": "ski",
+      "count": 2
+    },
+    {
+      "_id": "snowboard",
+      "count": 2
+    },
+    {
+      "_id": "boots",
+      "count": 1
+    },
+    {
+      "_id": "helmet",
+      "count": 3
+    }
+  ]
+  ```
+
+  **Komentarz:** Najprostszy wariant - rozwinięcie jednej tablicy.
+
+### **7. Podsumowanie przychodów według miesiąca**
+
+- **Wariant 1:**
+
+  ```js
+  db.reservations.aggregate([
+    {
+      $project: {
+        month: { $month: "$startDate" },
+        year: { $year: "$startDate" },
+        totalCost: 1,
+      },
+    },
+    {
+      $group: {
+        _id: { month: "$month", year: "$year" },
+        totalRevenue: { $sum: "$totalCost" },
+      },
+    },
+    {
+      $sort: { "_id.year": 1, "_id.month": 1 },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "month": 1,
+        "year": 2025
+      },
+      "totalRevenue": 120
+    },
+    {
+      "_id": {
+        "month": 5,
+        "year": 2025
+      },
+      "totalRevenue": 80
+    },
+    {
+      "_id": {
+        "month": 6,
+        "year": 2025
+      },
+      "totalRevenue": 160
+    }
+  ]
+  ```
+
+  **Komentarz:** Standardowa agregacja na kolekcji reservations.
+
+- **Wariant 2:**
+
+  ```js
+  db.clients.aggregate([
+    { $unwind: "$reservations" },
+    {
+      $project: {
+        month: { $month: "$reservations.startDate" },
+        year: { $year: "$reservations.startDate" },
+        totalCost: "$reservations.totalCost",
+      },
+    },
+    {
+      $group: {
+        _id: { month: "$month", year: "$year" },
+        totalRevenue: { $sum: "$totalCost" },
+      },
+    },
+    {
+      $sort: { "_id.year": 1, "_id.month": 1 },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "month": 1,
+        "year": 2025
+      },
+      "totalRevenue": 120
+    },
+    {
+      "_id": {
+        "month": 5,
+        "year": 2025
+      },
+      "totalRevenue": 80
+    },
+    {
+      "_id": {
+        "month": 6,
+        "year": 2025
+      },
+      "totalRevenue": 80
+    }
+  ]
+  ```
+
+  **Komentarz:** Podobna agregacja, ale z koniecznością rozwinięcia zagnieżdżonej tablicy.
+
+- **Wariant 3:**
+
+  ```js
+  db.reservations.aggregate([
+    {
+      $project: {
+        month: { $month: "$startDate" },
+        year: { $year: "$startDate" },
+        totalCost: 1,
+      },
+    },
+    {
+      $group: {
+        _id: { month: "$month", year: "$year" },
+        totalRevenue: { $sum: "$totalCost" },
+      },
+    },
+    {
+      $sort: { "_id.year": 1, "_id.month": 1 },
+    },
+  ]);
+  ```
+
+  **Wynik:**
+
+  ```json
+  [
+    {
+      "_id": {
+        "month": 5,
+        "year": 2023
+      },
+      "totalRevenue": 150
+    },
+    {
+      "_id": {
+        "month": 1,
+        "year": 2025
+      },
+      "totalRevenue": 120
+    },
+    {
+      "_id": {
+        "month": 5,
+        "year": 2025
+      },
+      "totalRevenue": 80
+    },
+    {
+      "_id": {
+        "month": 6,
+        "year": 2025
+      },
+      "totalRevenue": 80
+    }
+  ]
+  ```
+
+  **Komentarz:** Identyczne jak w wariancie 1.
+
+<div style="page-break-after: always"></div>
+
+### **8. Aktualizacja dostępności sprzętu**
+
+- **Wariant 1 oraz 3:**
+
+  ```js
+  db.equipment.updateOne(
+    { _id: ObjectId("60d21b4667d0d8992e610c1a") },
+    { $set: { isAvailable: false } }
+  );
+  ```
+
+  **Komentarz:** Prosta aktualizacja dokumentu.
+
+- **Wariant 2:** W tym wariancie informacja o dostępności sprzętu nie jest przechowywana bezpośrednio w dokumencie.
+
+<div style="page-break-after: always"></div>
+
+## Wnioski
+
+Na podstawie analizy trzech wariantów modeli danych i porównania zapytań można wyciągnąć następujące wnioski:
+
+### **Wariant 1: Struktura znormalizowana**
+
+- **Zalety:**
+  - Brak duplikacji danych
+  - Łatwość niezależnych aktualizacji informacji o klientach i sprzęcie
+  - Najlepsze dopasowanie do częstych zmian w katalogu sprzętu
+- **Wady:**
+  - Wolniejsze odczyty wymagające złączenia kolekcji
+  - Bardziej złożone zapytania dla uzyskania pełnych danych
+  - Wyższe koszty obliczeniowe przy pobieraniu złożonych relacji
+
+### **Wariant 2: Dokumenty zagnieżdżone**
+
+- **Zalety:**
+  - Najszybsze odczyty kompletnych danych o rezerwacjach klienta
+  - Proste zapytania dla historii klienta
+  - Dobra wydajność dla operacji zorientowanych na klienta
+- **Wady:**
+  - Znaczna duplikacja danych
+  - Trudność w utrzymaniu spójności danych
+  - Skomplikowane aktualizacje danych sprzętu (wymagane w wielu dokumentach)
+  - Potencjalnie duże dokumenty dla aktywnych klientów
+  - Brak bezpośredniej informacji o dostępności sprzętu
+
+### **Wariant 3: Podejście hybrydowe**
+
+- **Zalety:**
+  - Dobry balans między wydajnością a umiarkowaną duplikacją
+  - Szybsze odczyty niż w wariancie 1 bez nadmiernej duplikacji jak w wariancie 2
+  - Łatwiejsze utrzymanie spójności danych niż w wariancie 2
+  - Najlepsze ogólne wyniki dla różnorodnych zapytań
+- **Wady:**
+  - Nadal pewien poziom duplikacji danych
+  - Konieczność aktualizacji niektórych danych w wielu miejscach
+  - Większa złożoność projektowa niż w modelach czysto znormalizowanych lub zagnieżdżonych
+
+## **Wniosek końcowy:**
+
+Wariant 3 (podejście hybrydowe) wydaje się najlepszym kompromisem. Wybór optymalnej struktury powinien jednak uwzględniać konkretne wymagania biznesowe, proporcje operacji odczytu do zapisu oraz przewidywany wzrost danych w systemie.
 
 ---
 
