@@ -1,3 +1,10 @@
+Migrations/
+
+# SQLite database files
+*.db
+*-shm
+*-wal
+
 QueryBaseline.txt
 RuntimeModelBaseline.txt
 
