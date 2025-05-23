@@ -8,7 +8,11 @@ class Program
         bool addedNewSupplier = SupplierSelection(dbContext, out Supplier? selectedSupplier);
 
         Console.WriteLine("Adding product to supplier...");
-        selectedSupplier?.Products.Add(newProduct);
+        if (selectedSupplier != null)
+        {
+            selectedSupplier.Products.Add(newProduct);
+            newProduct.Supplier = selectedSupplier;
+        }
 
         Console.WriteLine("Saving data...");
         SaveToDatabase(dbContext, newProduct, selectedSupplier, addedNewSupplier);
