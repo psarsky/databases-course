@@ -20,10 +20,8 @@ public class ProdContext: DbContext
         modelBuilder.Entity<InvoiceProduct>()
             .HasKey(ip => new { ip.InvoiceID, ip.ProductID });
 
-        modelBuilder.Entity<Company>()
-            .HasDiscriminator<string>("CompanyType")
-            .HasValue<Company>("Company")
-            .HasValue<Supplier>("Supplier")
-            .HasValue<Customer>("Customer");
+        modelBuilder.Entity<Company>().ToTable("Companies");
+        modelBuilder.Entity<Supplier>().ToTable("Suppliers");
+        modelBuilder.Entity<Customer>().ToTable("Customers");
     }
 }
