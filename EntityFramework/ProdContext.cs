@@ -4,7 +4,9 @@ using EntityFramework;
 public class ProdContext: DbContext
 {
     public DbSet<Product> Products { get; set; }
+    public DbSet<Company> Companies { get; set; }
     public DbSet<Supplier> Suppliers { get; set; }
+    public DbSet<Customer> Customers { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceProduct> InvoiceProducts { get; set; }
     
@@ -17,5 +19,11 @@ public class ProdContext: DbContext
     {
         modelBuilder.Entity<InvoiceProduct>()
             .HasKey(ip => new { ip.InvoiceID, ip.ProductID });
+
+        modelBuilder.Entity<Company>()
+            .HasDiscriminator<string>("CompanyType")
+            .HasValue<Company>("Company")
+            .HasValue<Supplier>("Supplier")
+            .HasValue<Customer>("Customer");
     }
 }

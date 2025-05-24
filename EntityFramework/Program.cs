@@ -15,7 +15,9 @@ class Program
             Console.WriteLine("2. Create a new invoice");
             Console.WriteLine("3. Show products for an invoice");
             Console.WriteLine("4. Show invoices for a product");
-            Console.WriteLine("5. Exit");
+            Console.WriteLine("5. Add a new customer");
+            Console.WriteLine("6. Show all companies");
+            Console.WriteLine("7. Exit");
             Console.Write(">>> ");
             
             string? choice = Console.ReadLine();
@@ -35,6 +37,12 @@ class Program
                     ShowInvoicesForProduct(dbContext);
                     break;
                 case "5":
+                    AddCustomer(dbContext);
+                    break;
+                case "6":
+                    ShowAllCompanies(dbContext);
+                    break;
+                case "7":
                     exit = true;
                     break;
                 default:
@@ -131,13 +139,21 @@ class Program
         
         Console.Write("Enter street name\n>>> ");
         string street = Console.ReadLine() ?? "";
+
+        Console.Write("Enter zip code\n>>> ");
+        string zipCode = Console.ReadLine() ?? "";
+
+        Console.Write("Enter bank account number\n>>> ");
+        string bankAccountNumber = Console.ReadLine() ?? "";
         
         Console.WriteLine("Creating new supplier...");
         var newSupplier = new Supplier
         {
             CompanyName = name,
             City = city,
-            Street = street
+            Street = street,
+            ZipCode = zipCode,
+            BankAccountNumber = bankAccountNumber
         };
         
         Console.WriteLine($"Created supplier: {newSupplier}");
@@ -154,9 +170,8 @@ class Program
             Console.Write("Enter shipper ID for the new product\n>>> ");
             input = Console.ReadLine() ?? "";
         } while (string.IsNullOrEmpty(input) || !int.TryParse(input, out supplierId));
-        
         return db.Suppliers
-            .Where(s => s.SupplierID == supplierId)
+            .Where(s => s.CompanyID == supplierId)
             .FirstOrDefault();
     }
     
@@ -165,7 +180,7 @@ class Program
         Console.WriteLine("Supplier list:");
         foreach (var supplier in db.Suppliers)
         {
-            Console.WriteLine($"[{supplier.SupplierID}] {supplier}");
+            Console.WriteLine($"[{supplier.CompanyID}] {supplier}");
         }
     }
     
@@ -283,6 +298,62 @@ class Program
             {
                 Console.WriteLine("Product not found!");
             }
+        }
+    }
+    
+    private static void AddCustomer(ProdContext db)
+    {
+        Console.Write("\nEnter customer name\n>>> ");
+        string name = Console.ReadLine() ?? "";
+        
+        Console.Write("Enter city name\n>>> ");
+        string city = Console.ReadLine() ?? "";
+        
+        Console.Write("Enter street name\n>>> ");
+        string street = Console.ReadLine() ?? "";
+        
+        Console.Write("Enter zip code\n>>> ");
+        string zipCode = Console.ReadLine() ?? "";
+        
+        Console.Write("Enter discount (0-100%)\n>>> ");
+        if (decimal.TryParse(Console.ReadLine(), out decimal discount))
+        {
+            Console.WriteLine("Creating new customer...");
+            var newCustomer = new Customer
+            {
+                CompanyName = name,
+                City = city,
+                Street = street,
+                ZipCode = zipCode,
+                Discount = discount / 100
+            };
+            
+            Console.WriteLine($"Created customer: {newCustomer.CompanyName} with {newCustomer.Discount:P} discount");
+            db.Customers.Add(newCustomer);
+            db.SaveChanges();
+        }
+    }
+    
+    private static void ShowAllCompanies(ProdContext db)
+    {
+        Console.WriteLine("\nAll Companies:");
+        Console.WriteLine("Suppliers:");
+        foreach (var supplier in db.Suppliers)
+        {
+            Console.WriteLine($"- {supplier.CompanyName} (ID: {supplier.CompanyID}) - Bank Account: {supplier.BankAccountNumber ?? "Not provided"}");
+        }
+        
+        Console.WriteLine("\nCustomers:");
+        foreach (var customer in db.Customers)
+        {
+            Console.WriteLine($"- {customer.CompanyName} (ID: {customer.CompanyID}) - Discount: {customer.Discount:P}");
+        }
+        
+        Console.WriteLine("\nRegular Companies:");
+        var regularCompanies = db.Companies.Where(c => !(c is Supplier) && !(c is Customer)).ToList();
+        foreach (var company in regularCompanies)
+        {
+            Console.WriteLine($"- {company.CompanyName} (ID: {company.CompanyID})");
         }
     }
 }
